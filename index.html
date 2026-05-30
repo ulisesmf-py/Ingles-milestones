@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 /* ============================================================
    MILESTONES EDUCA — Design System
@@ -1037,35 +1038,49 @@ let activeParcial = 'p1';
 const ADMIN_USER = 'blackai';
 const ADMIN_PASS = 'milestone666';
 
+// Cloudflare Worker — backend seguro para crear usuarios
+const WORKER_URL   = 'https://milestones-auth.ulisesmf-inefable.workers.dev';
+const ADMIN_SECRET = 'milestones-auth-2026-ulises';
+
+// Firebase Auth instance
+const AUTH = firebase.auth();
+
 async function doLogin(){
   const u=document.getElementById('li-user').value.trim();
   const p=document.getElementById('li-pass').value.trim();
   const err=document.getElementById('li-err');
   err.textContent='';
   if(!u||!p){err.textContent='Completa los campos.';return;}
-
-  // Admin check
-  if(u===ADMIN_USER && p===ADMIN_PASS){
-    currentUser={id:'admin',name:'Profesor',username:'blackai',role:'admin'};
+  if(u===ADMIN_USER&&p===ADMIN_PASS){
+    try{await AUTH.signInWithEmailAndPassword(ADMIN_USER+'@milestones.app',p);}
+    catch(e){console.warn('Admin auth:',e.message);}
+    currentUser={id:'admin',name:'Profesor',username:ADMIN_USER,role:'admin'};
     await startApp();return;
   }
-
-  // Student check
-  const students=await dbGet('students');
-  if(students){
-    for(const [id,st] of Object.entries(students)){
-      if(st.username===u && st.password===p){
-        currentUser={...st,id};
-        await startApp();return;
+  try{
+    const students=await dbGet('students');
+    let rec=null,sid=null;
+    if(students){
+      for(const [id,st] of Object.entries(students)){
+        if(st.username===u){rec=st;sid=id;break;}
       }
     }
+    if(!rec){err.textContent='Usuario o contraseña incorrectos.';return;}
+    await AUTH.signInWithEmailAndPassword(u+'@milestones.app',p);
+    currentUser={...rec,id:sid};
+    await startApp();
+  }catch(e){
+    console.error('Login error:',e.code);
+    if(['auth/user-not-found','auth/wrong-password','auth/invalid-credential'].includes(e.code)){
+      err.textContent='Usuario o contraseña incorrectos.';
+    }else{err.textContent='Error de conexión. Intenta de nuevo.';}
   }
-  err.textContent='Usuario o contraseña incorrectos.';
 }
 
 document.getElementById('li-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 function doLogout(){
+  AUTH.signOut().catch(()=>{});
   currentUser=null;
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
@@ -3042,19 +3057,41 @@ async function saveStudent(editId=null){
   const group=document.getElementById('st-group').value.trim();
   const listNum=document.getElementById('st-num').value.trim();
   if(!name||!username||(!editId&&!password)){toast('Completa los campos requeridos','error');return;}
-  const data={name,username,email,group,listNum,role:'student'};
-  if(password)data.password=password;
-  if(editId){
-    await dbUpdate('students/'+editId,data);
-  } else {
-    // Each student gets their own node in Firebase with a consistent ID
-    const newId=await dbPush('students',data);
-    // Initialize empty progress/grades structure
-    await dbSet('grades/'+newId+'/meta',{name,createdAt:new Date().toISOString()});
+  try{
+    let authUid=editId;
+    if(!editId){
+      toast('Creando cuenta...','info');
+      const resp=await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
+        body:JSON.stringify({action:'create',email:username+'@milestones.app',password,displayName:name}),
+      });
+      const result=await resp.json();
+      if(!result.ok)throw new Error(result.error||'Error al crear usuario');
+      authUid=result.uid;
+    }
+    if(editId&&password){
+      const resp=await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
+        body:JSON.stringify({action:'updatePassword',uid:editId,newPassword:password}),
+      });
+      const result=await resp.json();
+      if(!result.ok)throw new Error(result.error);
+    }
+    const data={name,username,email,group,listNum,role:'student',authUid};
+    if(editId){await dbUpdate('students/'+editId,data);}
+    else{
+      await dbSet('students/'+authUid,data);
+      await dbSet('grades/'+authUid+'/meta',{name,createdAt:new Date().toISOString()});
+    }
+    SFX.success();
+    toast((editId?'Alumno actualizado':'Alumno agregado')+' ✅','success');
+    closeModal();renderStudents();
+  }catch(err){
+    console.error('saveStudent:',err);
+    toast('Error: '+err.message,'error');
   }
-  SFX.success();
-  toast((editId?'Alumno actualizado':'Alumno agregado')+' ✅','success');
-  closeModal();renderStudents();
 }
 
 async function editStudent(id){
@@ -3075,10 +3112,20 @@ async function editStudent(id){
 }
 
 async function deleteStudent(id,name){
-  openModal('🗑️ Eliminar Alumno',`<p>¿Eliminar a <strong>${name}</strong>?<br><small class="text-gray">Se eliminarán sus calificaciones, progreso, asistencia y notificaciones.</small></p>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-danger" onclick="confirmDeleteStudent('${id}')">Eliminar 🗑️</button>`
-  );
+  if(!confirm(`¿Eliminar a ${name}? Esta acción no se puede deshacer.`))return;
+  SFX.click();
+  try{
+    await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
+      body:JSON.stringify({action:'delete',uid:id}),
+    });
+  }catch(e){console.warn('Auth delete:',e.message);}
+  await dbRemove('students/'+id);
+  await dbRemove('progress/'+id);
+  await dbRemove('grades/'+id);
+  toast('Alumno eliminado','success');
+  renderStudents();
 }
 async function confirmDeleteStudent(id){
   // Remove ALL student-specific data nodes
