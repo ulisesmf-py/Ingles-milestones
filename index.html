@@ -380,74 +380,202 @@ tr:last-child td { border-bottom: none; }
 @keyframes twinkle { 0%,100%{opacity:0;transform:scale(.5)} 50%{opacity:.9;transform:scale(1)} }
 
 /* Login card */
-/* ── FLIP LOGIN CARD ── */
-.lc-scene {
-  width: 380px; max-width: 96vw;
-  position: relative; z-index: 2;
-  perspective: 1200px;
-  transform-style: preserve-3d;
-  transition: transform .65s cubic-bezier(.4,0,.2,1);
+/* ══ LOGIN ══ */
+#login-screen {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  min-height:100vh; padding:20px;
 }
-.lc-face {
-  background: rgba(255,255,255,.09);
-  backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 22px;
-  padding: 36px 34px 28px;
-  text-align: center;
-  box-shadow: 0 24px 80px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.18);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  width: 100%;
+.lc-wrap { width:100%; max-width:400px; position:relative; z-index:2; }
+
+/* Tabs */
+.lc-tabs {
+  display:flex; background:rgba(0,0,0,.25);
+  border-radius:14px 14px 0 0; overflow:hidden;
+  border:1px solid rgba(255,255,255,.12); border-bottom:none;
 }
-.lc-front { /* default visible */ }
-.lc-back {
-  position: absolute; top: 0; left: 0; right: 0;
-  transform: rotateY(180deg);
+.lc-tab {
+  flex:1; padding:13px 10px;
+  background:transparent; border:none;
+  color:rgba(255,255,255,.45); font-family:'Nunito',sans-serif;
+  font-size:.9rem; font-weight:700; cursor:pointer;
+  transition:all .25s; letter-spacing:.3px;
+}
+.lc-tab.active {
+  background:rgba(255,255,255,.1);
+  color:#fff;
+}
+.lc-tab:hover:not(.active) { color:rgba(255,255,255,.7); background:rgba(255,255,255,.05); }
+
+/* Card */
+.lc-card {
+  background:rgba(255,255,255,.09);
+  backdrop-filter:blur(22px) saturate(180%);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:0 0 18px 18px;
+  padding:28px 30px 26px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.15);
 }
 .app-name {
-  font-family: 'Fredoka', cursive; font-size: 1.85rem; font-weight: 700;
-  color: #fff; margin-bottom: 2px; letter-spacing: .5px;
-  text-shadow: 0 2px 12px rgba(0,0,0,.3);
+  font-family:'Fredoka',cursive; font-size:1.7rem; font-weight:700;
+  color:#fff; text-align:center; margin-bottom:2px;
+  text-shadow:0 2px 10px rgba(0,0,0,.3);
 }
-.app-sub { color: rgba(255,255,255,.6); font-size: .82rem; margin-bottom: 12px; font-weight: 600; }
-.lc-face input {
-  width: 100%; padding: 12px 15px;
-  background: rgba(255,255,255,.1);
-  border: 1.5px solid rgba(255,255,255,.22);
-  border-radius: 10px;
-  font-size: .93rem; font-family: 'Nunito', sans-serif;
-  margin-bottom: 10px; color: #fff;
-  transition: border .2s, background .2s; box-sizing: border-box;
+.app-sub {
+  color:rgba(255,255,255,.5); font-size:.78rem;
+  text-align:center; margin-bottom:18px; font-weight:600;
 }
-.lc-face input::placeholder { color: rgba(255,255,255,.45); }
-.lc-face input:focus { outline: none; border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.18); }
+
+/* Domain hint bar */
+.lc-domain-hint {
+  display:flex; align-items:center; gap:7px;
+  border:1px solid; border-radius:8px;
+  padding:7px 12px; margin-bottom:14px;
+  font-size:.78rem; letter-spacing:.3px;
+}
+
+/* Input with suffix */
+.lc-field-wrap {
+  position:relative; margin-bottom:10px;
+}
+.lc-field-wrap input {
+  width:100%; padding:12px 14px;
+  padding-right:170px;
+  background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);
+  border-radius:10px; font-size:.93rem;
+  font-family:'Nunito',sans-serif; color:#fff;
+  transition:border .2s, background .2s;
+  box-sizing:border-box;
+}
+.lc-field-wrap input:focus { outline:none; border-color:rgba(255,255,255,.6); background:rgba(255,255,255,.16); }
+.lc-domain-suffix {
+  position:absolute; right:12px; top:50%;
+  transform:translateY(-50%);
+  font-size:.72rem; color:rgba(255,255,255,.4);
+  font-weight:700; pointer-events:none;
+  white-space:nowrap;
+}
+.lc-card input[type="password"] {
+  width:100%; padding:12px 14px;
+  background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);
+  border-radius:10px; font-size:.93rem;
+  font-family:'Nunito',sans-serif; color:#fff;
+  margin-bottom:4px;
+  transition:border .2s, background .2s;
+  box-sizing:border-box;
+}
+.lc-card input[type="password"]:focus { outline:none; border-color:rgba(255,255,255,.6); background:rgba(255,255,255,.16); }
+.lc-card input::placeholder { color:rgba(255,255,255,.4); }
+
+/* ── Inputs alumno: azul fuerte siempre ── */
+#panel-s .lc-field-wrap input,
+#panel-s input[type="password"] {
+  background: rgba(29,78,216,0.35) !important;
+  border-color: rgba(93,130,246,.5) !important;
+  color: #fff !important;
+}
+#panel-s .lc-field-wrap input:focus,
+#panel-s input[type="password"]:focus {
+  background: rgba(29,78,216,0.55) !important;
+  border-color: rgba(147,197,253,.8) !important;
+}
+/* ── Inputs maestro: rojo siempre ── */
+#panel-t .lc-field-wrap input,
+#panel-t input[type="password"] {
+  background: rgba(185,28,28,0.35) !important;
+  border-color: rgba(220,38,38,.5) !important;
+  color: #fff !important;
+}
+#panel-t .lc-field-wrap input:focus,
+#panel-t input[type="password"]:focus {
+  background: rgba(185,28,28,0.55) !important;
+  border-color: rgba(252,165,165,.8) !important;
+}
+/* ── Autofill alumno (azul fuerte) ── */
+#panel-s .lc-field-wrap input:-webkit-autofill,
+#panel-s .lc-field-wrap input:-webkit-autofill:hover,
+#panel-s .lc-field-wrap input:-webkit-autofill:focus,
+#panel-s input[type="password"]:-webkit-autofill,
+#panel-s input[type="password"]:-webkit-autofill:hover,
+#panel-s input[type="password"]:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(29,78,216,0.6) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(29,78,216,0.6) inset !important;
+  border-color: rgba(93,130,246,.6) !important;
+  caret-color: #ffffff;
+  transition: background-color 99999s ease-in-out 0s;
+}
+/* ── Autofill maestro (rojo) ── */
+#panel-t .lc-field-wrap input:-webkit-autofill,
+#panel-t .lc-field-wrap input:-webkit-autofill:hover,
+#panel-t .lc-field-wrap input:-webkit-autofill:focus,
+#panel-t input[type="password"]:-webkit-autofill,
+#panel-t input[type="password"]:-webkit-autofill:hover,
+#panel-t input[type="password"]:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(185,28,28,0.6) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(185,28,28,0.6) inset !important;
+  border-color: rgba(220,38,38,.6) !important;
+  caret-color: #ffffff;
+  transition: background-color 99999s ease-in-out 0s;
+}
+/* Firefox dark mode */
+.lc-field-wrap input,
+.lc-card input[type="password"] {
+  color-scheme: dark;
+}
+
+/* Error */
+.lc-err {
+  color:#FCA5A5; font-size:.78rem; min-height:18px;
+  margin-bottom:8px; font-weight:700; text-align:center;
+}
+
+/* Remember toggle */
+.lc-remember {
+  display:flex; align-items:center; gap:8px;
+  cursor:pointer; margin-bottom:14px;
+  user-select:none; justify-content:center;
+}
+.lc-remember span { font-size:.76rem; color:rgba(255,255,255,.55); font-weight:700; }
+.lc-toggle {
+  width:36px; height:20px; border-radius:99px;
+  background:rgba(255,255,255,.15);
+  border:1.5px solid rgba(255,255,255,.2);
+  position:relative; cursor:pointer;
+  transition:background .25s; flex-shrink:0;
+}
+.lc-knob {
+  width:14px; height:14px; border-radius:50%; background:#fff;
+  position:absolute; top:2px; left:2px;
+  transition:transform .25s; box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+
+/* Buttons */
 .btn-login {
-  width: 100%; padding: 13px;
-  background: linear-gradient(135deg,#3b82f6,#2563eb);
-  color: #fff; border: none; border-radius: 10px;
-  font-family: 'Fredoka', cursive; font-size: 1.08rem; font-weight: 600;
-  cursor: pointer; margin-top: 4px;
-  box-shadow: 0 5px 18px rgba(59,130,246,.45);
-  transition: all .2s; letter-spacing: .3px;
+  width:100%; padding:13px;
+  border:none; border-radius:10px;
+  font-family:'Fredoka',cursive; font-size:1.05rem; font-weight:600;
+  cursor:pointer; transition:all .2s; letter-spacing:.3px; color:#fff;
 }
-.btn-login:hover { transform: translateY(-2px); box-shadow: 0 9px 26px rgba(59,130,246,.55); }
-.btn-login:active { transform: scale(.98); }
-.btn-login-teacher {
-  background: linear-gradient(135deg,#f59e0b,#d97706) !important;
-  box-shadow: 0 5px 18px rgba(245,158,11,.4) !important;
+.btn-student {
+  background:linear-gradient(135deg,#1d4ed8,#1e40af);
+  box-shadow:0 5px 18px rgba(29,78,216,.5);
 }
-.btn-login-teacher:hover { box-shadow: 0 9px 26px rgba(245,158,11,.55) !important; }
-.lc-switch-btn {
-  display:block; width:100%; margin-top:14px;
-  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18);
-  color: rgba(255,255,255,.7); border-radius: 8px; padding: 9px;
-  font-family: 'Nunito', sans-serif; font-size: .82rem; font-weight: 700;
-  cursor: pointer; transition: all .2s; letter-spacing: .3px;
+.btn-student:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(29,78,216,.7); }
+.btn-teacher {
+  background:linear-gradient(135deg,#dc2626,#b91c1c);
+  box-shadow:0 5px 18px rgba(220,38,38,.5);
 }
-.lc-switch-btn:hover { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.35); }
+.btn-teacher:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(220,38,38,.7); }
+.btn-login:active { transform:scale(.98); }
+.btn-login:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
 /* legacy compat */
 .login-card { display:none; }
+.lc-scene { display:none; }
 
 /* BG switcher */
 .bg-switcher {
@@ -871,118 +999,79 @@ tr:last-child td { border-bottom: none; }
   <div class="login-shape"></div>
   <div id="star-field"></div>
 
-  <!-- FLIP CONTAINER -->
-  <div class="lc-scene" id="lc-scene">
+  <div class="lc-wrap">
 
-    <!-- FRONT: ALUMNO -->
-    <div class="lc-face lc-front">
-      <a href="https://black-ai.pages.dev/" target="_blank"
-         style="display:inline-block;margin-bottom:10px;transition:transform .2s"
-         onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-        <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAARC" alt="Black IA"
-             style="width:72px;height:72px;object-fit:contain;border-radius:14px;
-                    box-shadow:0 6px 24px rgba(0,0,0,.35);
-                    border:2px solid rgba(255,255,255,.2);
-                    filter:brightness(1.1) drop-shadow(0 0 10px rgba(99,179,237,.4));">
-      </a>
+    <!-- TAB SWITCHER -->
+    <div class="lc-tabs">
+      <button class="lc-tab active" id="tab-s" onclick="switchTab('s')">🎓 Alumno</button>
+      <button class="lc-tab" id="tab-t" onclick="switchTab('t')">👨‍🏫 Maestro</button>
+    </div>
+
+    <!-- CARD -->
+    <div class="lc-card">
       <div class="app-name">Milestones Educa</div>
       <div class="app-sub">✦ Black IA · Web Education ✦</div>
 
-      <!-- Role badge -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 14px;
-                  background:rgba(99,179,237,.15);border:1.5px solid rgba(99,179,237,.35);
-                  border-radius:99px;padding:5px 16px;">
-        <span style="font-size:1rem;">🎓</span>
-        <span style="font-size:.8rem;color:#90cdf4;font-weight:700;letter-spacing:.5px;">ALUMNO · @student.blackai.com</span>
+      <!-- ALUMNO PANEL -->
+      <div id="panel-s">
+        <div class="lc-domain-hint" style="border-color:rgba(29,78,216,.5);background:rgba(29,78,216,.2);">
+          <span style="color:#93c5fd;">🎓</span>
+          <span style="color:#93c5fd;font-weight:700;">usuario<span style="opacity:.6;">@student.blackai.com</span></span>
+        </div>
+        <div class="lc-field-wrap">
+          <input type="text" id="li-user-s" placeholder="Usuario" autocomplete="off" oninput="clearErr('s')">
+          <span class="lc-domain-suffix">@student.blackai.com</span>
+        </div>
+        <input type="password" id="li-pass-s" placeholder="Contraseña" oninput="clearErr('s')" onkeydown="if(event.key==='Enter')doLogin('s')">
+        <div id="li-err-s" class="lc-err"></div>
+        <label class="lc-remember">
+          <div class="lc-toggle" id="rem-toggle-s" onclick="toggleRemember('s')">
+            <div class="lc-knob" id="rem-knob-s"></div>
+          </div>
+          <span>Recordar mi sesión</span>
+        </label>
+        <button class="btn-login btn-student" id="btn-login-s" onclick="doLogin('s')">
+          Entrar al Aula 🚀
+        </button>
       </div>
 
-      <input type="text" id="li-user-s" placeholder="👤 Usuario" autocomplete="off"
-             style="background:rgba(255,255,255,.08)">
-      <input type="password" id="li-pass-s" placeholder="🔒 Contraseña"
-             style="background:rgba(255,255,255,.08)">
-      <div id="li-err-s" style="color:#FCA5A5;font-size:.8rem;min-height:16px;margin-bottom:4px;font-weight:700;"></div>
-
-      <!-- Remember toggle -->
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;user-select:none;justify-content:center;">
-        <div id="rem-toggle-s" onclick="toggleRemember('s')"
-             style="width:38px;height:20px;border-radius:99px;background:rgba(255,255,255,.15);
-                    position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;
-                    border:1.5px solid rgba(255,255,255,.2);">
-          <div id="rem-knob-s"
-               style="width:14px;height:14px;border-radius:50%;background:#fff;
-                      position:absolute;top:2px;left:2px;
-                      transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>
+      <!-- MAESTRO PANEL -->
+      <div id="panel-t" style="display:none;">
+        <div class="lc-domain-hint" style="border-color:rgba(220,38,38,.5);background:rgba(220,38,38,.15);">
+          <span style="color:#fca5a5;">👨‍🏫</span>
+          <span style="color:#fca5a5;font-weight:700;">usuario<span style="opacity:.6;">@master.blackai.com</span></span>
         </div>
-        <span style="font-size:.76rem;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:.3px;">Guardar sesión</span>
-      </label>
-
-      <button class="btn-login" id="btn-login-s" onclick="doLogin('s')">Entrar al Aula 🚀</button>
-
-      <!-- Switch to teacher -->
-      <button onclick="flipLogin()" class="lc-switch-btn">
-        👨‍🏫 Soy Maestro — cambiar
-      </button>
-    </div>
-
-    <!-- BACK: MAESTRO -->
-    <div class="lc-face lc-back">
-      <a href="https://black-ai.pages.dev/" target="_blank"
-         style="display:inline-block;margin-bottom:10px;transition:transform .2s"
-         onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-        <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAARC" alt="Black IA"
-             style="width:72px;height:72px;object-fit:contain;border-radius:14px;
-                    box-shadow:0 6px 24px rgba(0,0,0,.35);
-                    border:2px solid rgba(255,255,255,.2);
-                    filter:brightness(1.1) drop-shadow(0 0 10px rgba(251,191,36,.4));">
-      </a>
-      <div class="app-name">Milestones Educa</div>
-      <div class="app-sub">✦ Black IA · Web Education ✦</div>
-
-      <!-- Role badge -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 14px;
-                  background:rgba(251,191,36,.12);border:1.5px solid rgba(251,191,36,.35);
-                  border-radius:99px;padding:5px 16px;">
-        <span style="font-size:1rem;">👨‍🏫</span>
-        <span style="font-size:.8rem;color:#fcd34d;font-weight:700;letter-spacing:.5px;">MAESTRO · @master.blackai.com</span>
+        <div class="lc-field-wrap">
+          <input type="text" id="li-user-t" placeholder="Usuario" autocomplete="off" oninput="clearErr('t')">
+          <span class="lc-domain-suffix" style="color:#fca5a5;">@master.blackai.com</span>
+        </div>
+        <input type="password" id="li-pass-t" placeholder="Contraseña" oninput="clearErr('t')" onkeydown="if(event.key==='Enter')doLogin('t')">
+        <div id="li-err-t" class="lc-err"></div>
+        <label class="lc-remember">
+          <div class="lc-toggle" id="rem-toggle-t" onclick="toggleRemember('t')">
+            <div class="lc-knob" id="rem-knob-t"></div>
+          </div>
+          <span>Recordar mi sesión</span>
+        </label>
+        <button class="btn-login btn-teacher" id="btn-login-t" onclick="doLogin('t')">
+          Entrar al Aula 🚀
+        </button>
       </div>
 
-      <input type="text" id="li-user-t" placeholder="👤 Usuario (ej: blackai)" autocomplete="off"
-             style="background:rgba(255,255,255,.08)">
-      <input type="password" id="li-pass-t" placeholder="🔒 Contraseña"
-             style="background:rgba(255,255,255,.08)">
-      <div id="li-err-t" style="color:#FCA5A5;font-size:.8rem;min-height:16px;margin-bottom:4px;font-weight:700;"></div>
+    </div><!-- /lc-card -->
 
-      <!-- Remember toggle -->
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;user-select:none;justify-content:center;">
-        <div id="rem-toggle-t" onclick="toggleRemember('t')"
-             style="width:38px;height:20px;border-radius:99px;background:rgba(255,255,255,.15);
-                    position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;
-                    border:1.5px solid rgba(255,255,255,.2);">
-          <div id="rem-knob-t"
-               style="width:14px;height:14px;border-radius:50%;background:#fff;
-                      position:absolute;top:2px;left:2px;
-                      transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>
-        </div>
-        <span style="font-size:.76rem;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:.3px;">Guardar sesión</span>
-      </label>
-
-      <button class="btn-login btn-login-teacher" id="btn-login-t" onclick="doLogin('t')">Entrar al Aula 🚀</button>
-
-      <!-- Switch to student -->
-      <button onclick="flipLogin()" class="lc-switch-btn">
-        🎓 Soy Alumno — cambiar
-      </button>
-    </div>
-
-  </div><!-- /lc-scene -->
+    <p style="margin-top:18px;font-size:.72rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.5px;text-align:center;">
+      SISTEMA DE APRENDIZAJE DE INGLÉS · BLACK IA
+    </p>
+  </div>
 
   <!-- Background selector -->
   <div class="bg-switcher" title="Cambia el fondo">
-    <div class="bg-dot active" onclick="setBg(1)" title="Gradiente Cósmico"></div>
-    <div class="bg-dot"        onclick="setBg(2)" title="Noche Estrellada"></div>
-    <div class="bg-dot"        onclick="setBg(3)" title="Aurora Boreal"></div>
-    <div class="bg-dot"        onclick="setBg(4)" title="Atardecer Mágico"></div>
-    <div class="bg-dot"        onclick="setBg(5)" title="Océano Profundo"></div>
+    <div class="bg-dot active" onclick="setBg(1)"></div>
+    <div class="bg-dot"        onclick="setBg(2)"></div>
+    <div class="bg-dot"        onclick="setBg(3)"></div>
+    <div class="bg-dot"        onclick="setBg(4)"></div>
+    <div class="bg-dot"        onclick="setBg(5)"></div>
   </div>
 </div>
 
@@ -1063,63 +1152,100 @@ tr:last-child td { border-bottom: none; }
 
 // ============================================================
 // ============================================================
-// LOGIN FLIP & REMEMBER SESSION
+// LOGIN — tabs, autorellenado, guardar sesión
 // ============================================================
-let _loginFlipped = false;
+let _activeTab = 's'; // 's' = alumno, 't' = maestro
 let _rememberOn = { s: false, t: false };
 
-(function initLogin() {
-  const hasSavedT = localStorage.getItem('ms_saved_user_t');
-  const hasSavedS = localStorage.getItem('ms_saved_user_s');
-  const fillRole = (role) => {
-    const u = localStorage.getItem('ms_saved_user_' + role);
-    const p = localStorage.getItem('ms_saved_pass_' + role);
-    if (!u || !p) return;
-    setTimeout(() => {
-      const uEl = document.getElementById('li-user-' + role);
-      const pEl = document.getElementById('li-pass-' + role);
-      if (uEl) uEl.value = u;
-      if (pEl) pEl.value = p;
-      _rememberOn[role] = true;
-      _applyToggleStyle(role, true);
-    }, 120);
-  };
-  if (hasSavedT) { fillRole('t'); setTimeout(() => { if (!_loginFlipped) flipLogin(); }, 200); }
-  else if (hasSavedS) { fillRole('s'); }
-})();
+function switchTab(role) {
+  _activeTab = role;
+  // tabs
+  document.getElementById('tab-s').classList.toggle('active', role === 's');
+  document.getElementById('tab-t').classList.toggle('active', role === 't');
+  // panels
+  document.getElementById('panel-s').style.display = role === 's' ? '' : 'none';
+  document.getElementById('panel-t').style.display = role === 't' ? '' : 'none';
+  // clear errors
+  ['s','t'].forEach(r => { const e = document.getElementById('li-err-' + r); if(e) e.textContent = ''; });
+}
 
-function _applyToggleStyle(role, on) {
+function clearErr(role) {
+  const e = document.getElementById('li-err-' + role);
+  if (e) e.textContent = '';
+}
+
+function _applyToggle(role, on) {
   const toggle = document.getElementById('rem-toggle-' + role);
   const knob   = document.getElementById('rem-knob-' + role);
   if (!toggle || !knob) return;
-  if (on) {
-    toggle.style.background = role === 't'
-      ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-      : 'linear-gradient(135deg,#3b82f6,#2563eb)';
-    toggle.style.borderColor = 'rgba(255,255,255,.45)';
-    knob.style.transform = 'translateX(18px)';
-  } else {
-    toggle.style.background = 'rgba(255,255,255,.15)';
-    toggle.style.borderColor = 'rgba(255,255,255,.2)';
-    knob.style.transform = 'translateX(0)';
-  }
+  toggle.style.background = on
+    ? (role === 't' ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#1d4ed8,#1e40af)')
+    : 'rgba(255,255,255,.15)';
+  toggle.style.borderColor = on ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.2)';
+  knob.style.transform = on ? 'translateX(16px)' : 'translateX(0)';
 }
 
 function toggleRemember(role) {
   _rememberOn[role] = !_rememberOn[role];
-  _applyToggleStyle(role, _rememberOn[role]);
+  _applyToggle(role, _rememberOn[role]);
   if (!_rememberOn[role]) {
     localStorage.removeItem('ms_saved_user_' + role);
     localStorage.removeItem('ms_saved_pass_' + role);
   }
 }
 
-function flipLogin() {
-  _loginFlipped = !_loginFlipped;
-  const scene = document.getElementById('lc-scene');
-  if (scene) scene.style.transform = _loginFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
-  ['s','t'].forEach(r => { const e = document.getElementById('li-err-' + r); if(e) e.textContent=''; });
-}
+// Autorellenar al cargar si hay sesión guardada
+(function restoreSession() {
+  const uT = localStorage.getItem('ms_saved_user_t');
+  const pT = localStorage.getItem('ms_saved_pass_t');
+  const uS = localStorage.getItem('ms_saved_user_s');
+  const pS = localStorage.getItem('ms_saved_pass_s');
+
+  // ALUMNO — panel-s visible por defecto, rellenar cuando el DOM cargue
+  if (uS && pS) {
+    const fillStudent = () => {
+      const uEl = document.getElementById('li-user-s');
+      const pEl = document.getElementById('li-pass-s');
+      if (uEl) uEl.value = uS;
+      if (pEl) pEl.value = pS;
+      _rememberOn.s = true;
+      _applyToggle('s', true);
+    };
+    if (document.readyState === 'complete') {
+      fillStudent();
+    } else {
+      window.addEventListener('load', fillStudent);
+    }
+  }
+
+  // MAESTRO — cambiar tab primero, luego rellenar
+  if (uT && pT) {
+    const fillTeacher = () => {
+      switchTab('t');
+      setTimeout(() => {
+        const uEl = document.getElementById('li-user-t');
+        const pEl = document.getElementById('li-pass-t');
+        if (uEl) uEl.value = uT;
+        if (pEl) pEl.value = pT;
+        _rememberOn.t = true;
+        _applyToggle('t', true);
+      }, 60);
+    };
+    if (document.readyState === 'complete') {
+      fillTeacher();
+    } else {
+      window.addEventListener('load', fillTeacher);
+    }
+  }
+})();
+
+// Enter para enviar
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const ls = document.getElementById('login-screen');
+  if (!ls || ls.classList.contains('hidden')) return;
+  doLogin(_activeTab);
+});
 
 // ── Background Switcher ───────────────────────────────────
 function setBg(n) {
@@ -1223,94 +1349,81 @@ const ADMIN_SECRET = 'milestones-auth-2026-ulises';
 const AUTH = firebase.auth();
 
 async function doLogin(role){
-  // role = 's' (student) or 't' (teacher/admin)
-  const u = (document.getElementById('li-user-' + role)?.value || '').trim();
+  // Obtener valores y limpiar dominio si el usuario lo escribió por error
+  let u = (document.getElementById('li-user-' + role)?.value || '').trim();
   const p = (document.getElementById('li-pass-' + role)?.value || '').trim();
+  u = u.replace(/@student\.blackai\.com$/i,'').replace(/@master\.blackai\.com$/i,'').trim();
+
   const err = document.getElementById('li-err-' + role);
   const btn = document.getElementById('btn-login-' + role);
   if (err) err.textContent = '';
-  if (!u || !p) { if(err) err.textContent = 'Completa los campos.'; return; }
+  if (!u || !p) { if(err) err.textContent = '⚠️ Completa usuario y contraseña.'; return; }
 
-  // Loading
-  if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; btn.style.opacity = '.7'; }
   const resetBtn = () => { if(btn){ btn.textContent='Entrar al Aula 🚀'; btn.disabled=false; btn.style.opacity='1'; } };
+  if(btn){ btn.textContent='Verificando...'; btn.disabled=true; btn.style.opacity='.65'; }
 
-  // ── TEACHER (admin) ──
+  // ── MAESTRO ──
   if (role === 't') {
     if (u !== ADMIN_USER || p !== ADMIN_PASS) {
-      if(err) err.textContent = 'Usuario o contraseña incorrectos.';
+      if(err) err.textContent = '⚠️ Usuario o contraseña incorrectos.';
       resetBtn(); return;
     }
+    const email = ADMIN_USER + '@master.blackai.com';
     try {
-      await AUTH.signInWithEmailAndPassword(ADMIN_USER + '@master.blackai.com', p);
+      await AUTH.signInWithEmailAndPassword(email, p);
     } catch(e) {
-      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-        try { await AUTH.createUserWithEmailAndPassword(ADMIN_USER + '@master.blackai.com', p); }
+      if (['auth/user-not-found','auth/invalid-credential','auth/invalid-email'].includes(e.code)) {
+        try { await AUTH.createUserWithEmailAndPassword(email, p); }
         catch(e2) { console.warn('Admin create:', e2.message); }
-      } else { console.warn('Admin auth:', e.message); }
+      } else { console.warn('Admin auth:', e.code, e.message); }
     }
     if (_rememberOn.t) {
       localStorage.setItem('ms_saved_user_t', u);
       localStorage.setItem('ms_saved_pass_t', p);
     }
     currentUser = { id:'admin', name:'Profesor', username:ADMIN_USER, role:'admin' };
-    resetBtn();
-    await startApp();
-    return;
+    resetBtn(); await startApp(); return;
   }
 
-  // ── STUDENT ──
+  // ── ALUMNO ──
   try {
     const students = await dbGet('students');
     let rec = null, sid = null;
     if (students) {
       for (const [id, st] of Object.entries(students)) {
-        if (st.username === u) { rec = st; sid = id; break; }
+        if ((st.username||'').toLowerCase() === u.toLowerCase()) { rec = st; sid = id; break; }
       }
     }
-    if (!rec) {
-      if(err) err.textContent = 'Usuario o contraseña incorrectos.';
-      resetBtn(); return;
-    }
-    // Try @student.blackai.com first, fallback to @milestones.app for legacy accounts
+    if (!rec) { if(err) err.textContent = '⚠️ Usuario no encontrado.'; resetBtn(); return; }
+
+    // Intentar con ambos dominios
     let loginOk = false;
-    try {
-      await AUTH.signInWithEmailAndPassword(u + '@student.blackai.com', p);
-      loginOk = true;
-    } catch(e1) {
-      if (e1.code === 'auth/user-not-found' || e1.code === 'auth/invalid-credential') {
-        try {
-          await AUTH.signInWithEmailAndPassword(u + '@milestones.app', p);
-          loginOk = true;
-        } catch(e2) {
-          if (e2.code === 'auth/wrong-password' || e2.code === 'auth/invalid-credential') {
-            if(err) err.textContent = 'Usuario o contraseña incorrectos.';
-            resetBtn(); return;
-          }
-          if(err) err.textContent = 'Cuenta no encontrada. Pide al maestro que te vuelva a registrar.';
+    for (const email of [u+'@student.blackai.com', u+'@milestones.app']) {
+      try {
+        await AUTH.signInWithEmailAndPassword(email, p);
+        loginOk = true; break;
+      } catch(e) {
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+          if(err) err.textContent = '⚠️ Contraseña incorrecta.';
           resetBtn(); return;
         }
-      } else if (e1.code === 'auth/wrong-password') {
-        if(err) err.textContent = 'Usuario o contraseña incorrectos.';
-        resetBtn(); return;
-      } else { throw e1; }
+        // usuario no existe en este dominio, probar el siguiente
+      }
     }
-    if (!loginOk) { resetBtn(); return; }
+    if (!loginOk) {
+      if(err) err.textContent = '⚠️ Cuenta no activada. Habla con tu maestro.';
+      resetBtn(); return;
+    }
     if (_rememberOn.s) {
       localStorage.setItem('ms_saved_user_s', u);
       localStorage.setItem('ms_saved_pass_s', p);
     }
     currentUser = { ...rec, id: sid };
-    resetBtn();
-    await startApp();
+    resetBtn(); await startApp();
   } catch(e) {
     console.error('Login error:', e.code, e.message);
     resetBtn();
-    if (['auth/wrong-password','auth/invalid-credential','auth/user-not-found'].includes(e.code)) {
-      if(err) err.textContent = 'Usuario o contraseña incorrectos.';
-    } else {
-      if(err) err.textContent = 'Error de conexión. Intenta de nuevo.';
-    }
+    if(err) err.textContent = '⚠️ Error de conexión. Intenta de nuevo.';
   }
 }
 
