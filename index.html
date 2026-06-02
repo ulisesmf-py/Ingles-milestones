@@ -856,6 +856,19 @@ tr:last-child td { border-bottom: none; }
     <input type="text"     id="li-user" placeholder="👤 Usuario" autocomplete="off">
     <input type="password" id="li-pass" placeholder="🔒 Contraseña">
     <div id="li-err" style="color:#FCA5A5;font-size:.82rem;min-height:18px;margin-bottom:6px;font-weight:700;"></div>
+    <!-- Recordar sesión -->
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;user-select:none;">
+      <div id="remember-toggle" onclick="toggleRemember()" style="
+        width:40px;height:22px;border-radius:99px;background:rgba(255,255,255,.18);
+        position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;
+        border:1.5px solid rgba(255,255,255,.25);">
+        <div id="remember-knob" style="
+          width:16px;height:16px;border-radius:50%;background:#fff;
+          position:absolute;top:2px;left:2px;
+          transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>
+      </div>
+      <span style="font-size:.78rem;color:rgba(255,255,255,.65);font-weight:700;letter-spacing:.3px;">Guardar sesión</span>
+    </label>
     <button class="btn-login" onclick="doLogin()">Entrar al Aula 🚀</button>
     <p style="margin-top:20px;font-size:.75rem;color:rgba(255,255,255,.45);font-weight:600;letter-spacing:.5px;">SISTEMA DE APRENDIZAJE DE INGLÉS</p>
   </div>
@@ -944,6 +957,52 @@ tr:last-child td { border-bottom: none; }
 
 
 
+
+// ============================================================
+// REMEMBER SESSION — rellena campos pero siempre requiere click
+// ============================================================
+let _rememberOn = false;
+
+function toggleRemember() {
+  _rememberOn = !_rememberOn;
+  const toggle = document.getElementById('remember-toggle');
+  const knob   = document.getElementById('remember-knob');
+  if (_rememberOn) {
+    toggle.style.background = 'linear-gradient(135deg,var(--accent),var(--primary))';
+    toggle.style.borderColor = 'rgba(255,255,255,.4)';
+    knob.style.transform = 'translateX(18px)';
+  } else {
+    toggle.style.background = 'rgba(255,255,255,.18)';
+    toggle.style.borderColor = 'rgba(255,255,255,.25)';
+    knob.style.transform = 'translateX(0)';
+    // Si apagan "recordar", borrar la sesión guardada
+    localStorage.removeItem('ms_saved_user');
+    localStorage.removeItem('ms_saved_pass');
+  }
+}
+
+// Restaurar campos al cargar (si hay sesión guardada)
+(function restoreSavedSession() {
+  const su = localStorage.getItem('ms_saved_user');
+  const sp = localStorage.getItem('ms_saved_pass');
+  if (su && sp) {
+    setTimeout(() => {
+      const uEl = document.getElementById('li-user');
+      const pEl = document.getElementById('li-pass');
+      if (uEl) uEl.value = su;
+      if (pEl) pEl.value = sp;
+      // Activar toggle visualmente
+      _rememberOn = true;
+      const toggle = document.getElementById('remember-toggle');
+      const knob   = document.getElementById('remember-knob');
+      if (toggle) {
+        toggle.style.background = 'linear-gradient(135deg,var(--accent),var(--primary))';
+        toggle.style.borderColor = 'rgba(255,255,255,.4)';
+      }
+      if (knob) knob.style.transform = 'translateX(18px)';
+    }, 80);
+  }
+})();
 
 // ── Background Switcher ───────────────────────────────────
 function setBg(n) {
@@ -1050,14 +1109,37 @@ async function doLogin(){
   const u=document.getElementById('li-user').value.trim();
   const p=document.getElementById('li-pass').value.trim();
   const err=document.getElementById('li-err');
+  const btn=document.querySelector('.btn-login');
   err.textContent='';
   if(!u||!p){err.textContent='Completa los campos.';return;}
+
+  // Loading state
+  if(btn){btn.textContent='Verificando...';btn.disabled=true;btn.style.opacity='.7';}
+
+  // ── ADMIN ──
   if(u===ADMIN_USER&&p===ADMIN_PASS){
-    try{await AUTH.signInWithEmailAndPassword(ADMIN_USER+'@milestones.app',p);}
-    catch(e){console.warn('Admin auth:',e.message);}
+    try{
+      // Email real de admin: blackai@master.blackai.com
+      await AUTH.signInWithEmailAndPassword(ADMIN_USER+'@master.blackai.com',p);
+    }catch(e){
+      // Si no existe aún, intentar crear la cuenta de admin
+      if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
+        try{
+          await AUTH.createUserWithEmailAndPassword(ADMIN_USER+'@master.blackai.com',p);
+        }catch(e2){console.warn('Admin create:',e2.message);}
+      }else{console.warn('Admin auth:',e.message);}
+    }
+    if(_rememberOn){
+      localStorage.setItem('ms_saved_user',u);
+      localStorage.setItem('ms_saved_pass',p);
+    }
     currentUser={id:'admin',name:'Profesor',username:ADMIN_USER,role:'admin'};
-    await startApp();return;
+    if(btn){btn.textContent='Entrar al Aula 🚀';btn.disabled=false;btn.style.opacity='1';}
+    await startApp();
+    return;
   }
+
+  // ── ALUMNO ──
   try{
     const students=await dbGet('students');
     let rec=null,sid=null;
@@ -1066,15 +1148,44 @@ async function doLogin(){
         if(st.username===u){rec=st;sid=id;break;}
       }
     }
-    if(!rec){err.textContent='Usuario o contraseña incorrectos.';return;}
-    await AUTH.signInWithEmailAndPassword(u+'@milestones.app',p);
+    if(!rec){
+      err.textContent='Usuario o contraseña incorrectos.';
+      if(btn){btn.textContent='Entrar al Aula 🚀';btn.disabled=false;btn.style.opacity='1';}
+      return;
+    }
+    // Email real de alumno: username@student.blackai.com
+    try{
+      await AUTH.signInWithEmailAndPassword(u+'@student.blackai.com',p);
+    }catch(e){
+      // Intentar con dominio legacy por retrocompatibilidad
+      if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
+        try{
+          await AUTH.signInWithEmailAndPassword(u+'@milestones.app',p);
+        }catch(e2){
+          // Si tampoco existe en legacy, informar al maestro que debe recrear la cuenta
+          err.textContent='Cuenta no encontrada. Pide al maestro que te vuelva a registrar.';
+          if(btn){btn.textContent='Entrar al Aula 🚀';btn.disabled=false;btn.style.opacity='1';}
+          return;
+        }
+      }else{
+        throw e;
+      }
+    }
+    if(_rememberOn){
+      localStorage.setItem('ms_saved_user',u);
+      localStorage.setItem('ms_saved_pass',p);
+    }
     currentUser={...rec,id:sid};
+    if(btn){btn.textContent='Entrar al Aula 🚀';btn.disabled=false;btn.style.opacity='1';}
     await startApp();
   }catch(e){
-    console.error('Login error:',e.code);
-    if(['auth/user-not-found','auth/wrong-password','auth/invalid-credential'].includes(e.code)){
+    console.error('Login error:',e.code,e.message);
+    if(btn){btn.textContent='Entrar al Aula 🚀';btn.disabled=false;btn.style.opacity='1';}
+    if(['auth/wrong-password','auth/invalid-credential','auth/user-not-found'].includes(e.code)){
       err.textContent='Usuario o contraseña incorrectos.';
-    }else{err.textContent='Error de conexión. Intenta de nuevo.';}
+    }else{
+      err.textContent='Error de conexión. Intenta de nuevo.';
+    }
   }
 }
 
@@ -1083,6 +1194,11 @@ document.getElementById('li-pass').addEventListener('keydown',e=>{if(e.key==='En
 function doLogout(){
   AUTH.signOut().catch(()=>{});
   currentUser=null;
+  // Si el toggle no estaba activo, limpiar sesión guardada
+  if(!_rememberOn){
+    localStorage.removeItem('ms_saved_user');
+    localStorage.removeItem('ms_saved_pass');
+  }
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
 }
@@ -3065,7 +3181,7 @@ async function saveStudent(editId=null){
       const resp=await fetch(WORKER_URL,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-        body:JSON.stringify({action:'create',email:username+'@milestones.app',password,displayName:name}),
+        body:JSON.stringify({action:'create',email:username+'@student.blackai.com',password,displayName:name}),
       });
       const result=await resp.json();
       if(!result.ok)throw new Error(result.error||'Error al crear usuario');
