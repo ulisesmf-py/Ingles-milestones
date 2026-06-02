@@ -1349,10 +1349,12 @@ const ADMIN_SECRET = 'milestones-auth-2026-ulises';
 const AUTH = firebase.auth();
 
 async function doLogin(role){
-  // Obtener valores y limpiar dominio si el usuario lo escribió por error
   let u = (document.getElementById('li-user-' + role)?.value || '').trim();
   const p = (document.getElementById('li-pass-' + role)?.value || '').trim();
-  u = u.replace(/@student\.blackai\.com$/i,'').replace(/@master\.blackai\.com$/i,'').trim();
+  // Limpiar dominio si lo escribieron completo
+  u = u.replace(/@student\.blackai\.com$/i,'')
+       .replace(/@master\.blackai\.com$/i,'')
+       .replace(/@milestones\.app$/i,'').trim();
 
   const err = document.getElementById('li-err-' + role);
   const btn = document.getElementById('btn-login-' + role);
@@ -1362,7 +1364,10 @@ async function doLogin(role){
   const resetBtn = () => { if(btn){ btn.textContent='Entrar al Aula 🚀'; btn.disabled=false; btn.style.opacity='1'; } };
   if(btn){ btn.textContent='Verificando...'; btn.disabled=true; btn.style.opacity='.65'; }
 
-  // ── MAESTRO ──
+  // ══════════════════════════════════════════
+  // MAESTRO — verificar credenciales locales primero,
+  // luego Firebase Auth
+  // ══════════════════════════════════════════
   if (role === 't') {
     if (u !== ADMIN_USER || p !== ADMIN_PASS) {
       if(err) err.textContent = '⚠️ Usuario o contraseña incorrectos.';
@@ -1372,56 +1377,87 @@ async function doLogin(role){
     try {
       await AUTH.signInWithEmailAndPassword(email, p);
     } catch(e) {
-      if (['auth/user-not-found','auth/invalid-credential','auth/invalid-email'].includes(e.code)) {
-        try { await AUTH.createUserWithEmailAndPassword(email, p); }
-        catch(e2) { console.warn('Admin create:', e2.message); }
-      } else { console.warn('Admin auth:', e.code, e.message); }
+      // Si no existe la cuenta en Firebase Auth, crearla
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+        try {
+          await AUTH.createUserWithEmailAndPassword(email, p);
+        } catch(e2) {
+          // Si ya existe pero con error distinto, ignorar — el sistema igual funciona
+          console.warn('Admin Firebase create:', e2.code);
+        }
+      } else {
+        console.warn('Admin Firebase auth:', e.code, e.message);
+      }
     }
     if (_rememberOn.t) {
       localStorage.setItem('ms_saved_user_t', u);
       localStorage.setItem('ms_saved_pass_t', p);
     }
     currentUser = { id:'admin', name:'Profesor', username:ADMIN_USER, role:'admin' };
-    resetBtn(); await startApp(); return;
+    resetBtn();
+    await startApp();
+    return;
   }
 
-  // ── ALUMNO ──
+  // ══════════════════════════════════════════
+  // ALUMNO — primero autenticar en Firebase,
+  // luego buscar en DB (ya autenticado)
+  // ══════════════════════════════════════════
   try {
-    const students = await dbGet('students');
-    let rec = null, sid = null;
-    if (students) {
-      for (const [id, st] of Object.entries(students)) {
-        if ((st.username||'').toLowerCase() === u.toLowerCase()) { rec = st; sid = id; break; }
-      }
-    }
-    if (!rec) { if(err) err.textContent = '⚠️ Usuario no encontrado.'; resetBtn(); return; }
+    // PASO 1: intentar Firebase Auth con ambos dominios
+    let firebaseOk = false;
+    let authError  = null;
 
-    // Intentar con ambos dominios
-    let loginOk = false;
-    for (const email of [u+'@student.blackai.com', u+'@milestones.app']) {
+    for (const email of [u + '@student.blackai.com', u + '@milestones.app']) {
       try {
         await AUTH.signInWithEmailAndPassword(email, p);
-        loginOk = true; break;
+        firebaseOk = true;
+        break;
       } catch(e) {
+        authError = e;
+        // Contraseña incorrecta — no seguir probando
         if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
           if(err) err.textContent = '⚠️ Contraseña incorrecta.';
           resetBtn(); return;
         }
-        // usuario no existe en este dominio, probar el siguiente
+        // Si no existe en este dominio, probar el siguiente
       }
     }
-    if (!loginOk) {
+
+    if (!firebaseOk) {
       if(err) err.textContent = '⚠️ Cuenta no activada. Habla con tu maestro.';
       resetBtn(); return;
     }
+
+    // PASO 2: ya autenticado, ahora sí leer la DB
+    const students = await dbGet('students');
+    let rec = null, sid = null;
+    if (students) {
+      for (const [id, st] of Object.entries(students)) {
+        if ((st.username || '').toLowerCase() === u.toLowerCase()) {
+          rec = st; sid = id; break;
+        }
+      }
+    }
+
+    if (!rec) {
+      // Está en Firebase Auth pero no en la DB — cerrar sesión
+      AUTH.signOut().catch(()=>{});
+      if(err) err.textContent = '⚠️ Usuario no registrado. Habla con tu maestro.';
+      resetBtn(); return;
+    }
+
     if (_rememberOn.s) {
       localStorage.setItem('ms_saved_user_s', u);
       localStorage.setItem('ms_saved_pass_s', p);
     }
     currentUser = { ...rec, id: sid };
-    resetBtn(); await startApp();
+    resetBtn();
+    await startApp();
+
   } catch(e) {
     console.error('Login error:', e.code, e.message);
+    AUTH.signOut().catch(()=>{});
     resetBtn();
     if(err) err.textContent = '⚠️ Error de conexión. Intenta de nuevo.';
   }
