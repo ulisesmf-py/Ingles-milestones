@@ -1429,8 +1429,10 @@ async function doLogin(role){
       resetBtn(); return;
     }
 
-    // PASO 2: ya autenticado, ahora sí leer la DB
-    const students = await dbGet('students');
+    // PASO 2: ya autenticado, buscar en /students (raíz) y en /milestone/students
+    let students = await DB.ref('students').once('value').then(s=>s.val());
+    // Fallback: buscar también en milestone/students por si acaso
+    if (!students) students = await dbGet('students');
     let rec = null, sid = null;
     if (students) {
       for (const [id, st] of Object.entries(students)) {
