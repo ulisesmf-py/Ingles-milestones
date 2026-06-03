@@ -3187,7 +3187,7 @@ function renderReadingPreview(reading, topicId) {
       <h3 class="section-title mb-0">📖 Lectura Guardada (${reading.questions.length} preguntas)</h3>
       <button class="btn btn-danger btn-xs" onclick="deleteReading('${topicId}')">🗑️ Eliminar</button>
     </div>
-    <div style="background:#f8fafc;border-left:4px solid var(--blue);padding:16px;border-radius:8px;font-size:.92rem;line-height:1.75;white-space:pre-line;margin-bottom:16px">${reading.reading}</div>
+    <div style="background:#f8fafc;border-left:4px solid var(--blue);padding:16px;border-radius:8px;font-size:.92rem;line-height:1.75;white-space:pre-line;margin-bottom:16px">${(reading.reading||'').replace(/\\n/g,'\n')}</div>
     <h4 class="fw-bold mb-2">❓ Preguntas (${reading.questions.length}):</h4>
     ${reading.questions.map((q, i) => `
       <div class="mb-3 p-3" style="background:#f8fafc;border-radius:8px;">
@@ -3467,9 +3467,9 @@ async function renderStudents(){
   <div class="card">
     <div class="flex justify-between items-center mb-4">
       <h3 class="section-title mb-0">👥 Alumnos (${students?Object.keys(students).length:0})</h3>
-      <button class="btn btn-primary" onclick="SFX.click();openAddStudent()">➕ Agregar Alumno</button>
+      <button class="btn btn-primary" onclick="SFX.click();openAddStudentChoice()">➕ Agregar Alumno</button>
     </div>
-    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos</p></div>':
+    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos registrados en esta materia</p></div>':
     `<table><thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Acciones</th></tr></thead><tbody>`+
     Object.entries(students).map(([id,s])=>`<tr>
       <td>${s.listNum||'--'}</td><td><strong>${s.name}</strong></td>
@@ -3483,29 +3483,170 @@ async function renderStudents(){
   </div>`;
 }
 
-function openAddStudent(){
+// ── Elegir cómo agregar alumno ────────────────────────────────
+function openAddStudentChoice() {
   openModal('➕ Agregar Alumno',`
+    <p class="text-sm text-gray mb-4">¿Cómo deseas agregar al alumno?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <button class="btn btn-primary" style="padding:20px;flex-direction:column;gap:8px;height:auto"
+        onclick="closeModal();openAddStudentNew()">
+        <span style="font-size:2rem">✨</span>
+        <span style="font-weight:800">Nuevo alumno</span>
+        <span style="font-size:.75rem;opacity:.8;font-weight:400">Crear cuenta nueva en el sistema</span>
+      </button>
+      <button class="btn btn-success" style="padding:20px;flex-direction:column;gap:8px;height:auto"
+        onclick="closeModal();openSearchSystemStudents()">
+        <span style="font-size:2rem">🔍</span>
+        <span style="font-weight:800">Buscar en sistema</span>
+        <span style="font-size:.75rem;opacity:.8;font-weight:400">Alumno ya registrado en otra materia</span>
+      </button>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`
+  );
+}
+
+// ── Crear cuenta nueva ────────────────────────────────────────
+function openAddStudentNew(){
+  openModal('✨ Nuevo Alumno',`
     <div class="form-group"><label>Nombre completo *</label><input id="st-name" placeholder="Ej: María García"></div>
-    <div class="form-group"><label>Usuario *</label><input id="st-user" placeholder="usuario123"></div>
-    <div class="form-group"><label>Contraseña *</label><input id="st-pass" type="password" placeholder="contraseña"></div>
-    <div class="form-group"><label>Email</label><input id="st-email" type="email" placeholder="correo@ejemplo.com"></div>
+    <div class="form-group"><label>Usuario *</label>
+      <div style="display:flex;align-items:center;gap:0">
+        <input id="st-user" placeholder="mariagarcia" style="border-radius:8px 0 0 8px;border-right:none;flex:1">
+        <span style="padding:11px 12px;background:#f3f4f6;border:2px solid #e5e7eb;border-radius:0 8px 8px 0;font-size:.82rem;color:#6b7280;white-space:nowrap;font-family:'DM Mono',monospace">@student.blackai.com</span>
+      </div>
+    </div>
+    <div class="form-group"><label>Contraseña *</label><input id="st-pass" type="text" placeholder="mínimo 6 caracteres"></div>
     <div class="grid-2">
       <div class="form-group"><label>Grupo</label><input id="st-group" placeholder="Ej: 2A"></div>
       <div class="form-group"><label>No. Lista</label><input id="st-num" type="number" placeholder="1"></div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="saveStudent()">Guardar ✅</button>`
+     <button class="btn btn-primary" onclick="saveStudent()">Crear y agregar ✅</button>`
   );
 }
 
+// ── Buscar alumno en el sistema global /students ──────────────
+async function openSearchSystemStudents() {
+  openModal('🔍 Buscar Alumno en el Sistema',`
+    <p class="text-sm text-gray mb-3">Busca alumnos ya registrados. Puedes filtrar por nombre, usuario o materia.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="sys-search" placeholder="Nombre, usuario..." style="flex:1;padding:10px 14px;border:2px solid #e5e7eb;border-radius:8px;font-family:Nunito,sans-serif;font-size:.9rem" oninput="filterSystemStudents()">
+      <select id="sys-materia" style="padding:10px 12px;border:2px solid #e5e7eb;border-radius:8px;font-family:Nunito,sans-serif;font-size:.85rem" onchange="filterSystemStudents()">
+        <option value="">Todas las materias</option>
+        <option value="inglés">Inglés</option>
+        <option value="informática">Informática</option>
+        <option value="pedagogía">Pedagogía</option>
+        <option value="hacking ético">Hacking Ético</option>
+      </select>
+    </div>
+    <div id="sys-results" style="max-height:320px;overflow-y:auto">
+      <div style="text-align:center;padding:20px;color:#9ca3af">Cargando alumnos del sistema...</div>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`
+  );
+
+  // Load from global /students (root, not milestone/students)
+  try {
+    const snap = await DB.ref('students').once('value');
+    const allSys = snap.val() || {};
+    // Also load local students to mark already enrolled
+    const localStudents = await dbGet('students') || {};
+    window._sysStudents = Object.entries(allSys).map(([uid, s]) => ({ uid, ...s }));
+    window._localStudentIds = new Set(Object.keys(localStudents));
+    window._sysStudents.sort((a,b)=>(a.name||'').localeCompare(b.name||'','es'));
+    renderSystemStudentsList(window._sysStudents);
+  } catch(e) {
+    document.getElementById('sys-results').innerHTML =
+      `<div style="color:#ef4444;padding:16px">Error al cargar: ${e.message}</div>`;
+  }
+}
+
+function filterSystemStudents() {
+  if (!window._sysStudents) return;
+  const q = (document.getElementById('sys-search')?.value||'').trim().toLowerCase();
+  const mat = (document.getElementById('sys-materia')?.value||'').toLowerCase();
+  let list = window._sysStudents;
+  if (q) list = list.filter(s =>
+    (s.name||'').toLowerCase().includes(q) ||
+    (s.username||'').toLowerCase().includes(q) ||
+    (s.email||'').toLowerCase().includes(q)
+  );
+  if (mat) list = list.filter(s => {
+    const mats = Array.isArray(s.materias) ? s.materias : (s.materia ? [s.materia] : []);
+    return mats.some(m => m.toLowerCase().includes(mat));
+  });
+  renderSystemStudentsList(list);
+}
+
+function renderSystemStudentsList(list) {
+  const container = document.getElementById('sys-results');
+  if (!container) return;
+  if (!list.length) {
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af">Sin resultados</div>';
+    return;
+  }
+  container.innerHTML = list.map(s => {
+    const enrolled = window._localStudentIds?.has(s.uid);
+    const mats = Array.isArray(s.materias) ? s.materias : (s.materia ? [s.materia] : []);
+    const matsHtml = mats.length
+      ? mats.map(m=>`<span class="badge badge-purple" style="font-size:.65rem">${m}</span>`).join(' ')
+      : '<span style="font-size:.75rem;color:#9ca3af">Sin materia</span>';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #f3f4f6;${enrolled?'opacity:.5':''}">
+      <div style="width:38px;height:38px;background:#4F46E5;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0">
+        ${(s.name||'?').slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:.9rem">${s.name||'Sin nombre'}</div>
+        <div style="font-size:.75rem;color:#6b7280;font-family:monospace">${s.email||s.username||''}</div>
+        <div style="margin-top:3px">${matsHtml}</div>
+      </div>
+      ${enrolled
+        ? `<span class="badge badge-green" style="flex-shrink:0">✓ En esta materia</span>`
+        : `<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="enrollSystemStudent('${s.uid}')">+ Agregar</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+async function enrollSystemStudent(uid) {
+  const s = window._sysStudents?.find(x => x.uid === uid);
+  if (!s) return;
+  try {
+    // Copy student data to local milestone/students (same uid)
+    await dbSet('students/' + uid, {
+      name: s.name || '',
+      username: s.username || '',
+      email: s.email || '',
+      group: s.group || '',
+      listNum: s.listNum || '',
+      role: 'student',
+      authUid: uid,
+      enrolledFrom: 'system',
+      enrolledAt: new Date().toISOString()
+    });
+    await dbSet('grades/' + uid + '/meta', { name: s.name, createdAt: new Date().toISOString() });
+    SFX.success();
+    toast(`${s.name} agregado a Inglés Milestones ✅`, 'success');
+    // Refresh enrolled set
+    if (window._localStudentIds) window._localStudentIds.add(uid);
+    renderSystemStudentsList(window._sysStudents);
+    // Also re-render students tab
+    renderStudents();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+function openAddStudent(){ openAddStudentNew(); } // legacy alias
+
 async function saveStudent(editId=null){
   const name=document.getElementById('st-name').value.trim();
-  const username=document.getElementById('st-user').value.trim();
+  const username=document.getElementById('st-user').value.trim().toLowerCase().replace(/\s+/g,'');
   const password=document.getElementById('st-pass').value.trim();
-  const email=document.getElementById('st-email').value.trim();
   const group=document.getElementById('st-group').value.trim();
   const listNum=document.getElementById('st-num').value.trim();
   if(!name||!username||(!editId&&!password)){toast('Completa los campos requeridos','error');return;}
+  const email = username + '@student.blackai.com';
   try{
     let authUid=editId;
     if(!editId){
@@ -3513,11 +3654,18 @@ async function saveStudent(editId=null){
       const resp=await fetch(WORKER_URL,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-        body:JSON.stringify({action:'create',email:username+'@student.blackai.com',password,displayName:name}),
+        body:JSON.stringify({action:'create',email,password,displayName:name}),
       });
       const result=await resp.json();
       if(!result.ok)throw new Error(result.error||'Error al crear usuario');
       authUid=result.uid;
+      // Also save to global /students so other platforms can find this student
+      await DB.ref('students/'+authUid).set({
+        name, username, email, password,
+        materias:['inglés'],
+        createdAt: Date.now(),
+        createdBy: currentUser?.email||''
+      });
     }
     if(editId&&password){
       const resp=await fetch(WORKER_URL,{
@@ -5941,8 +6089,10 @@ async function renderReadingWithGlossary(topicId) {
 
   // Highlight glossary words in reading text
   function highlightText(text) {
-    if (!glossary.length) return text.replace(/\n/g,'<br>');
-    let result = text;
+    // Normalize line breaks: handle literal \n strings AND real newlines
+    const normalized = text.replace(/\\n/g, '\n');
+    if (!glossary.length) return normalized.replace(/\n/g,'<br>');
+    let result = normalized;
     for (const [key, meta] of Object.entries(glossaryMap)) {
       const regex = new RegExp(`\\b(${key})\\b`, 'gi');
       result = result.replace(regex, (match) =>
