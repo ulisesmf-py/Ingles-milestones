@@ -1365,35 +1365,55 @@ async function doLogin(role){
   if(btn){ btn.textContent='Verificando...'; btn.disabled=true; btn.style.opacity='.65'; }
 
   // ══════════════════════════════════════════
-  // MAESTRO — verificar credenciales locales primero,
-  // luego Firebase Auth
+  // MAESTRO — Firebase Auth primero, luego verificar en /admin/profesores
   // ══════════════════════════════════════════
   if (role === 't') {
-    if (u !== ADMIN_USER || p !== ADMIN_PASS) {
-      if(err) err.textContent = '⚠️ Usuario o contraseña incorrectos.';
-      resetBtn(); return;
-    }
-    const email = ADMIN_USER + '@master.blackai.com';
+    // El usuario escribe solo su nombre (ej: Ulises_martinez o blackai)
+    // Construimos el email con el dominio
+    const email = u + '@master.blackai.com';
+
+    // PASO 1: Firebase Auth
     try {
       await AUTH.signInWithEmailAndPassword(email, p);
     } catch(e) {
-      // Si no existe la cuenta en Firebase Auth, crearla
-      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-        try {
-          await AUTH.createUserWithEmailAndPassword(email, p);
-        } catch(e2) {
-          // Si ya existe pero con error distinto, ignorar — el sistema igual funciona
-          console.warn('Admin Firebase create:', e2.code);
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        if(err) err.textContent = '⚠️ Contraseña incorrecta.';
+        resetBtn(); return;
+      }
+      if (e.code === 'auth/user-not-found') {
+        // Solo crear cuenta si es el admin hardcodeado
+        if (u === ADMIN_USER && p === ADMIN_PASS) {
+          try { await AUTH.createUserWithEmailAndPassword(email, p); }
+          catch(e2) { console.warn('Admin create:', e2.code); }
+        } else {
+          if(err) err.textContent = '⚠️ Cuenta no encontrada. Habla con el administrador.';
+          resetBtn(); return;
         }
       } else {
-        console.warn('Admin Firebase auth:', e.code, e.message);
+        console.warn('Teacher auth:', e.code, e.message);
       }
     }
+
+    // PASO 2: ya autenticado, buscar en /admin/profesores
+    let nombre = 'Profesor';
+    try {
+      const profesores = await DB.ref('admin/profesores').once('value').then(s=>s.val());
+      if (profesores) {
+        for (const [id, prof] of Object.entries(profesores)) {
+          const emailUser = (prof.email || '').replace(/@master\.blackai\.com$/i,'').replace(/@.*$/,'').toLowerCase();
+          if (emailUser === u.toLowerCase()) {
+            nombre = prof.nombre || prof.name || 'Profesor';
+            break;
+          }
+        }
+      }
+    } catch(e) { console.warn('Prof DB read:', e.message); }
+
     if (_rememberOn.t) {
       localStorage.setItem('ms_saved_user_t', u);
       localStorage.setItem('ms_saved_pass_t', p);
     }
-    currentUser = { id:'admin', name:'Profesor', username:ADMIN_USER, role:'admin' };
+    currentUser = { id:'admin', name: nombre, username: u, role:'admin' };
     resetBtn();
     await startApp();
     return;
