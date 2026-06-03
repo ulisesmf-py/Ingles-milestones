@@ -1310,6 +1310,45 @@ async function dbRemove(path){await dbRef(path).remove();}
 async function dbUpdate(path,data){await dbRef(path).update(data);}
 
 // ============================================================
+// SYNC → Portal de Calificaciones Black IA
+// Escribe en /grades/{uid}/inglés/ el resumen estandarizado
+// que el portal de docentes puede leer.
+// Se llama automáticamente después de cada guardado de calificación.
+// ============================================================
+async function syncGradesToPortal(studentId) {
+  try {
+    const parciales = ['p1','p2','p3'];
+    const keyMap = { p1:'parcial1', p2:'parcial2', p3:'parcial3' };
+    const updates = {};
+
+    for (const p of parciales) {
+      const g = await dbGet('grades/' + studentId + '/' + p);
+      if (!g) continue;
+      // avg está en escala 0-10, el portal usa 0-100
+      const avg = parseFloat(g.avg);
+      if (isNaN(avg)) continue;
+      const score = Math.round(avg * 10); // 8.5 → 85
+      updates[keyMap[p]] = {
+        score,                              // 0-100 — lo que lee el portal
+        activities: g.activities || null,   // calificación de actividades (0-10)
+        attendance: g.attendance || null,   // asistencia (0-10)
+        exam:       g.exam       || null,   // examen (0-10)
+        avg:        g.avg        || null,   // promedio original (0-10)
+        updatedAt:  Date.now(),
+        platform:   'ingles-milestones'
+      };
+    }
+
+    if (Object.keys(updates).length === 0) return;
+
+    // Escribe en la raíz /grades/{uid}/inglés/ (sin prefijo BASE)
+    await DB.ref('grades/' + studentId + '/inglés').update(updates);
+  } catch(e) {
+    console.warn('[Portal sync] Error al sincronizar calificaciones:', e);
+  }
+}
+
+// ============================================================
 // TOAST
 // ============================================================
 function toast(msg, type=''){
@@ -3785,6 +3824,8 @@ async function saveGrade(studentId){
   const avg=((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0)/3).toFixed(1);
   const realAvg=(((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0))/3).toFixed(1);
   await dbSet('grades/'+studentId+'/'+activeParcial,{activities:act,attendance:att,exam,avg:realAvg});
+  // Sync al portal de docentes Black IA
+  syncGradesToPortal(studentId);
   SFX.success();toast('Calificación guardada ✅','success');closeModal();renderGrades();
 }
 
@@ -6211,6 +6252,8 @@ async function updateActivityGradeForStudent(studentId, parcial) {
   }
 
   await dbSet('grades/' + studentId + '/' + parcial, existing);
+  // Sync al portal de docentes Black IA
+  syncGradesToPortal(studentId);
 }
 
 // Call this after any exercise completion
