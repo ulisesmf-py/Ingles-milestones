@@ -1368,39 +1368,51 @@ async function doLogin(role){
   // MAESTRO — Firebase Auth primero, luego verificar en /admin/profesores
   // ══════════════════════════════════════════
   if (role === 't') {
-    // El usuario escribe solo su nombre (ej: Ulises_martinez o blackai)
-    // Construimos el email con el dominio
     const email = u + '@master.blackai.com';
+    let authOk = false;
 
-    // PASO 1: Firebase Auth
+    // PASO 1: Firebase Auth — cualquier error detiene el flujo
     try {
       await AUTH.signInWithEmailAndPassword(email, p);
+      authOk = true;
     } catch(e) {
-      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      if (e.code === 'auth/wrong-password'  ||
+          e.code === 'auth/invalid-credential' ||
+          e.code === 'auth/invalid-login-credentials') {
         if(err) err.textContent = '⚠️ Contraseña incorrecta.';
         resetBtn(); return;
       }
       if (e.code === 'auth/user-not-found') {
-        // Solo crear cuenta si es el admin hardcodeado
         if (u === ADMIN_USER && p === ADMIN_PASS) {
-          try { await AUTH.createUserWithEmailAndPassword(email, p); }
-          catch(e2) { console.warn('Admin create:', e2.code); }
+          try { await AUTH.createUserWithEmailAndPassword(email, p); authOk = true; }
+          catch(e2) { if(err) err.textContent = '⚠️ Error al crear cuenta.'; resetBtn(); return; }
         } else {
           if(err) err.textContent = '⚠️ Cuenta no encontrada. Habla con el administrador.';
           resetBtn(); return;
         }
       } else {
-        console.warn('Teacher auth:', e.code, e.message);
+        // CUALQUIER otro error de Firebase → detener completamente
+        console.error('Teacher auth error:', e.code);
+        if(err) err.textContent = '⚠️ Error de autenticación: ' + e.code;
+        resetBtn(); return;
       }
     }
 
-    // PASO 2: ya autenticado, buscar en /admin/profesores
+    // Seguro: si authOk no es true, no continuar
+    if (!authOk) {
+      if(err) err.textContent = '⚠️ No se pudo verificar. Intenta de nuevo.';
+      resetBtn(); return;
+    }
+
+    // PASO 2: ya autenticado → buscar nombre en /admin/profesores
     let nombre = 'Profesor';
     try {
       const profesores = await DB.ref('admin/profesores').once('value').then(s=>s.val());
       if (profesores) {
         for (const [id, prof] of Object.entries(profesores)) {
-          const emailUser = (prof.email || '').replace(/@master\.blackai\.com$/i,'').replace(/@.*$/,'').toLowerCase();
+          const emailUser = (prof.email || '')
+            .replace(/@master\.blackai\.com$/i,'')
+            .replace(/@.*$/,'').toLowerCase();
           if (emailUser === u.toLowerCase()) {
             nombre = prof.nombre || prof.name || 'Profesor';
             break;
@@ -1419,7 +1431,6 @@ async function doLogin(role){
     return;
   }
 
-  // ══════════════════════════════════════════
   // ALUMNO — primero autenticar en Firebase,
   // luego buscar en DB (ya autenticado)
   // ══════════════════════════════════════════
