@@ -1310,45 +1310,6 @@ async function dbRemove(path){await dbRef(path).remove();}
 async function dbUpdate(path,data){await dbRef(path).update(data);}
 
 // ============================================================
-// SYNC → Portal de Calificaciones Black IA
-// Escribe en /grades/{uid}/inglés/ el resumen estandarizado
-// que el portal de docentes puede leer.
-// Se llama automáticamente después de cada guardado de calificación.
-// ============================================================
-async function syncGradesToPortal(studentId) {
-  try {
-    const parciales = ['p1','p2','p3'];
-    const keyMap = { p1:'parcial1', p2:'parcial2', p3:'parcial3' };
-    const updates = {};
-
-    for (const p of parciales) {
-      const g = await dbGet('grades/' + studentId + '/' + p);
-      if (!g) continue;
-      // avg está en escala 0-10, el portal usa 0-100
-      const avg = parseFloat(g.avg);
-      if (isNaN(avg)) continue;
-      const score = Math.round(avg * 10); // 8.5 → 85
-      updates[keyMap[p]] = {
-        score,                              // 0-100 — lo que lee el portal
-        activities: g.activities || null,   // calificación de actividades (0-10)
-        attendance: g.attendance || null,   // asistencia (0-10)
-        exam:       g.exam       || null,   // examen (0-10)
-        avg:        g.avg        || null,   // promedio original (0-10)
-        updatedAt:  Date.now(),
-        platform:   'ingles-milestones'
-      };
-    }
-
-    if (Object.keys(updates).length === 0) return;
-
-    // Escribe en la raíz /grades/{uid}/inglés/ (sin prefijo BASE)
-    await DB.ref('grades/' + studentId + '/inglés').update(updates);
-  } catch(e) {
-    console.warn('[Portal sync] Error al sincronizar calificaciones:', e);
-  }
-}
-
-// ============================================================
 // TOAST
 // ============================================================
 function toast(msg, type=''){
@@ -3187,7 +3148,7 @@ function renderReadingPreview(reading, topicId) {
       <h3 class="section-title mb-0">📖 Lectura Guardada (${reading.questions.length} preguntas)</h3>
       <button class="btn btn-danger btn-xs" onclick="deleteReading('${topicId}')">🗑️ Eliminar</button>
     </div>
-    <div style="background:#f8fafc;border-left:4px solid var(--blue);padding:16px;border-radius:8px;font-size:.92rem;line-height:1.75;white-space:pre-line;margin-bottom:16px">${(reading.reading||'').replace(/\\n/g,'\n')}</div>
+    <div style="background:#f8fafc;border-left:4px solid var(--blue);padding:16px;border-radius:8px;font-size:.92rem;line-height:1.75;white-space:pre-line;margin-bottom:16px">${reading.reading}</div>
     <h4 class="fw-bold mb-2">❓ Preguntas (${reading.questions.length}):</h4>
     ${reading.questions.map((q, i) => `
       <div class="mb-3 p-3" style="background:#f8fafc;border-radius:8px;">
@@ -3467,9 +3428,9 @@ async function renderStudents(){
   <div class="card">
     <div class="flex justify-between items-center mb-4">
       <h3 class="section-title mb-0">👥 Alumnos (${students?Object.keys(students).length:0})</h3>
-      <button class="btn btn-primary" onclick="SFX.click();openAddStudentChoice()">➕ Agregar Alumno</button>
+      <button class="btn btn-primary" onclick="SFX.click();openAddStudent()">➕ Agregar Alumno</button>
     </div>
-    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos registrados en esta materia</p></div>':
+    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos</p></div>':
     `<table><thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Acciones</th></tr></thead><tbody>`+
     Object.entries(students).map(([id,s])=>`<tr>
       <td>${s.listNum||'--'}</td><td><strong>${s.name}</strong></td>
@@ -3483,170 +3444,29 @@ async function renderStudents(){
   </div>`;
 }
 
-// ── Elegir cómo agregar alumno ────────────────────────────────
-function openAddStudentChoice() {
+function openAddStudent(){
   openModal('➕ Agregar Alumno',`
-    <p class="text-sm text-gray mb-4">¿Cómo deseas agregar al alumno?</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <button class="btn btn-primary" style="padding:20px;flex-direction:column;gap:8px;height:auto"
-        onclick="closeModal();openAddStudentNew()">
-        <span style="font-size:2rem">✨</span>
-        <span style="font-weight:800">Nuevo alumno</span>
-        <span style="font-size:.75rem;opacity:.8;font-weight:400">Crear cuenta nueva en el sistema</span>
-      </button>
-      <button class="btn btn-success" style="padding:20px;flex-direction:column;gap:8px;height:auto"
-        onclick="closeModal();openSearchSystemStudents()">
-        <span style="font-size:2rem">🔍</span>
-        <span style="font-weight:800">Buscar en sistema</span>
-        <span style="font-size:.75rem;opacity:.8;font-weight:400">Alumno ya registrado en otra materia</span>
-      </button>
-    </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`
-  );
-}
-
-// ── Crear cuenta nueva ────────────────────────────────────────
-function openAddStudentNew(){
-  openModal('✨ Nuevo Alumno',`
     <div class="form-group"><label>Nombre completo *</label><input id="st-name" placeholder="Ej: María García"></div>
-    <div class="form-group"><label>Usuario *</label>
-      <div style="display:flex;align-items:center;gap:0">
-        <input id="st-user" placeholder="mariagarcia" style="border-radius:8px 0 0 8px;border-right:none;flex:1">
-        <span style="padding:11px 12px;background:#f3f4f6;border:2px solid #e5e7eb;border-radius:0 8px 8px 0;font-size:.82rem;color:#6b7280;white-space:nowrap;font-family:'DM Mono',monospace">@student.blackai.com</span>
-      </div>
-    </div>
-    <div class="form-group"><label>Contraseña *</label><input id="st-pass" type="text" placeholder="mínimo 6 caracteres"></div>
+    <div class="form-group"><label>Usuario *</label><input id="st-user" placeholder="usuario123"></div>
+    <div class="form-group"><label>Contraseña *</label><input id="st-pass" type="password" placeholder="contraseña"></div>
+    <div class="form-group"><label>Email</label><input id="st-email" type="email" placeholder="correo@ejemplo.com"></div>
     <div class="grid-2">
       <div class="form-group"><label>Grupo</label><input id="st-group" placeholder="Ej: 2A"></div>
       <div class="form-group"><label>No. Lista</label><input id="st-num" type="number" placeholder="1"></div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="saveStudent()">Crear y agregar ✅</button>`
+     <button class="btn btn-primary" onclick="saveStudent()">Guardar ✅</button>`
   );
 }
-
-// ── Buscar alumno en el sistema global /students ──────────────
-async function openSearchSystemStudents() {
-  openModal('🔍 Buscar Alumno en el Sistema',`
-    <p class="text-sm text-gray mb-3">Busca alumnos ya registrados. Puedes filtrar por nombre, usuario o materia.</p>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="sys-search" placeholder="Nombre, usuario..." style="flex:1;padding:10px 14px;border:2px solid #e5e7eb;border-radius:8px;font-family:Nunito,sans-serif;font-size:.9rem" oninput="filterSystemStudents()">
-      <select id="sys-materia" style="padding:10px 12px;border:2px solid #e5e7eb;border-radius:8px;font-family:Nunito,sans-serif;font-size:.85rem" onchange="filterSystemStudents()">
-        <option value="">Todas las materias</option>
-        <option value="inglés">Inglés</option>
-        <option value="informática">Informática</option>
-        <option value="pedagogía">Pedagogía</option>
-        <option value="hacking ético">Hacking Ético</option>
-      </select>
-    </div>
-    <div id="sys-results" style="max-height:320px;overflow-y:auto">
-      <div style="text-align:center;padding:20px;color:#9ca3af">Cargando alumnos del sistema...</div>
-    </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`
-  );
-
-  // Load from global /students (root, not milestone/students)
-  try {
-    const snap = await DB.ref('students').once('value');
-    const allSys = snap.val() || {};
-    // Also load local students to mark already enrolled
-    const localStudents = await dbGet('students') || {};
-    window._sysStudents = Object.entries(allSys).map(([uid, s]) => ({ uid, ...s }));
-    window._localStudentIds = new Set(Object.keys(localStudents));
-    window._sysStudents.sort((a,b)=>(a.name||'').localeCompare(b.name||'','es'));
-    renderSystemStudentsList(window._sysStudents);
-  } catch(e) {
-    document.getElementById('sys-results').innerHTML =
-      `<div style="color:#ef4444;padding:16px">Error al cargar: ${e.message}</div>`;
-  }
-}
-
-function filterSystemStudents() {
-  if (!window._sysStudents) return;
-  const q = (document.getElementById('sys-search')?.value||'').trim().toLowerCase();
-  const mat = (document.getElementById('sys-materia')?.value||'').toLowerCase();
-  let list = window._sysStudents;
-  if (q) list = list.filter(s =>
-    (s.name||'').toLowerCase().includes(q) ||
-    (s.username||'').toLowerCase().includes(q) ||
-    (s.email||'').toLowerCase().includes(q)
-  );
-  if (mat) list = list.filter(s => {
-    const mats = Array.isArray(s.materias) ? s.materias : (s.materia ? [s.materia] : []);
-    return mats.some(m => m.toLowerCase().includes(mat));
-  });
-  renderSystemStudentsList(list);
-}
-
-function renderSystemStudentsList(list) {
-  const container = document.getElementById('sys-results');
-  if (!container) return;
-  if (!list.length) {
-    container.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af">Sin resultados</div>';
-    return;
-  }
-  container.innerHTML = list.map(s => {
-    const enrolled = window._localStudentIds?.has(s.uid);
-    const mats = Array.isArray(s.materias) ? s.materias : (s.materia ? [s.materia] : []);
-    const matsHtml = mats.length
-      ? mats.map(m=>`<span class="badge badge-purple" style="font-size:.65rem">${m}</span>`).join(' ')
-      : '<span style="font-size:.75rem;color:#9ca3af">Sin materia</span>';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #f3f4f6;${enrolled?'opacity:.5':''}">
-      <div style="width:38px;height:38px;background:#4F46E5;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0">
-        ${(s.name||'?').slice(0,2).toUpperCase()}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:800;font-size:.9rem">${s.name||'Sin nombre'}</div>
-        <div style="font-size:.75rem;color:#6b7280;font-family:monospace">${s.email||s.username||''}</div>
-        <div style="margin-top:3px">${matsHtml}</div>
-      </div>
-      ${enrolled
-        ? `<span class="badge badge-green" style="flex-shrink:0">✓ En esta materia</span>`
-        : `<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="enrollSystemStudent('${s.uid}')">+ Agregar</button>`
-      }
-    </div>`;
-  }).join('');
-}
-
-async function enrollSystemStudent(uid) {
-  const s = window._sysStudents?.find(x => x.uid === uid);
-  if (!s) return;
-  try {
-    // Copy student data to local milestone/students (same uid)
-    await dbSet('students/' + uid, {
-      name: s.name || '',
-      username: s.username || '',
-      email: s.email || '',
-      group: s.group || '',
-      listNum: s.listNum || '',
-      role: 'student',
-      authUid: uid,
-      enrolledFrom: 'system',
-      enrolledAt: new Date().toISOString()
-    });
-    await dbSet('grades/' + uid + '/meta', { name: s.name, createdAt: new Date().toISOString() });
-    SFX.success();
-    toast(`${s.name} agregado a Inglés Milestones ✅`, 'success');
-    // Refresh enrolled set
-    if (window._localStudentIds) window._localStudentIds.add(uid);
-    renderSystemStudentsList(window._sysStudents);
-    // Also re-render students tab
-    renderStudents();
-  } catch(e) {
-    toast('Error: ' + e.message, 'error');
-  }
-}
-
-function openAddStudent(){ openAddStudentNew(); } // legacy alias
 
 async function saveStudent(editId=null){
   const name=document.getElementById('st-name').value.trim();
-  const username=document.getElementById('st-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const username=document.getElementById('st-user').value.trim();
   const password=document.getElementById('st-pass').value.trim();
+  const email=document.getElementById('st-email').value.trim();
   const group=document.getElementById('st-group').value.trim();
   const listNum=document.getElementById('st-num').value.trim();
   if(!name||!username||(!editId&&!password)){toast('Completa los campos requeridos','error');return;}
-  const email = username + '@student.blackai.com';
   try{
     let authUid=editId;
     if(!editId){
@@ -3654,18 +3474,11 @@ async function saveStudent(editId=null){
       const resp=await fetch(WORKER_URL,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-        body:JSON.stringify({action:'create',email,password,displayName:name}),
+        body:JSON.stringify({action:'create',email:username+'@student.blackai.com',password,displayName:name}),
       });
       const result=await resp.json();
       if(!result.ok)throw new Error(result.error||'Error al crear usuario');
       authUid=result.uid;
-      // Also save to global /students so other platforms can find this student
-      await DB.ref('students/'+authUid).set({
-        name, username, email, password,
-        materias:['inglés'],
-        createdAt: Date.now(),
-        createdBy: currentUser?.email||''
-      });
     }
     if(editId&&password){
       const resp=await fetch(WORKER_URL,{
@@ -3969,11 +3782,19 @@ async function saveGrade(studentId){
   const act=document.getElementById('g-act').value;
   const att=document.getElementById('g-att').value;
   const exam=document.getElementById('g-exam').value;
-  const avg=((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0)/3).toFixed(1);
   const realAvg=(((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0))/3).toFixed(1);
   await dbSet('grades/'+studentId+'/'+activeParcial,{activities:act,attendance:att,exam,avg:realAvg});
-  // Sync al portal de docentes Black IA
-  syncGradesToPortal(studentId);
+  // Sincronizar al portal /grades/{uid}/inglés/
+  try {
+    const students = await DB.ref('students').once('value').then(s=>s.val());
+    if (students && students[studentId]) {
+      // Simular currentUser temporalmente para el sync
+      const _prev = currentUser;
+      currentUser = { ...students[studentId], id: studentId };
+      await syncGradesToPortal(studentId);
+      currentUser = _prev;
+    }
+  } catch(e) { console.warn('Portal sync (manual):', e); }
   SFX.success();toast('Calificación guardada ✅','success');closeModal();renderGrades();
 }
 
@@ -6089,10 +5910,8 @@ async function renderReadingWithGlossary(topicId) {
 
   // Highlight glossary words in reading text
   function highlightText(text) {
-    // Normalize line breaks: handle literal \n strings AND real newlines
-    const normalized = text.replace(/\\n/g, '\n');
-    if (!glossary.length) return normalized.replace(/\n/g,'<br>');
-    let result = normalized;
+    if (!glossary.length) return text.replace(/\n/g,'<br>');
+    let result = text;
     for (const [key, meta] of Object.entries(glossaryMap)) {
       const regex = new RegExp(`\\b(${key})\\b`, 'gi');
       result = result.replace(regex, (match) =>
@@ -6402,21 +6221,95 @@ async function updateActivityGradeForStudent(studentId, parcial) {
   }
 
   await dbSet('grades/' + studentId + '/' + parcial, existing);
-  // Sync al portal de docentes Black IA
-  syncGradesToPortal(studentId);
 }
 
 // Call this after any exercise completion
 async function saveProgressAndGrade(topicId, moduleType, score, total, pct) {
-  // Save progress first
+  // 1. Guardar progreso en /milestone/progress/
   await dbSet('progress/' + currentUser.id + '/' + topicId + '/' + moduleType,
     { score, total, pct, date: new Date().toISOString() });
-  // Auto-update activity grade for current student and parcial
+
+  // 2. Auto-actualizar calificación de actividad del parcial actual
   try {
     await updateActivityGradeForStudent(currentUser.id, activeParcial);
   } catch(e) {
     console.warn('Grade update error:', e);
   }
+
+  // 3. Sincronizar al portal de calificaciones /grades/{uid}/inglés/
+  try {
+    await syncGradesToPortal(currentUser.id);
+  } catch(e) {
+    console.warn('Portal sync error:', e);
+  }
+}
+
+// ============================================================
+// SYNC GRADES TO PORTAL — escribe en /grades/{uid}/inglés/
+// Estructura compatible con el portal de calificaciones Black IA
+// ============================================================
+async function syncGradesToPortal(uid) {
+  if (!uid) return;
+
+  // Leer calificaciones actuales del alumno
+  const [gradesData, progressData, activitiesData] = await Promise.all([
+    DB.ref('milestone/grades/' + uid).once('value').then(s => s.val()),
+    DB.ref('milestone/progress/' + uid).once('value').then(s => s.val()),
+    DB.ref('milestone/activities').once('value').then(s => s.val())
+  ]);
+
+  // Calcular promedio de progreso por parcial
+  const parciales = { p1: null, p2: null, p3: null };
+
+  ['p1', 'p2', 'p3'].forEach(parcial => {
+    const g = gradesData?.[parcial];
+    if (!g) return;
+
+    // Promedio de actividades del parcial
+    let actSum = 0, actCount = 0;
+    if (progressData && activitiesData) {
+      Object.values(activitiesData).forEach(act => {
+        if (act.parcial !== parcial || act.active === false) return;
+        // Buscar progreso de este tema en el alumno
+        const topicProgress = progressData[act.topicId || act.id];
+        if (topicProgress) {
+          const vals = Object.values(topicProgress).map(m => m.pct || 0);
+          if (vals.length) { actSum += vals.reduce((a,b) => a+b, 0) / vals.length; actCount++; }
+        }
+      });
+    }
+
+    const actAvg    = actCount > 0 ? Math.round(actSum / actCount) : (g.activities || 0);
+    const attendance = g.attendance || 0;
+    const exam      = g.exam || 0;
+
+    // Fórmula: 40% actividades + 20% asistencia + 40% examen
+    const final = Math.round(actAvg * 0.4 + attendance * 0.2 + exam * 0.4);
+
+    parciales[parcial] = {
+      actividades: actAvg,
+      asistencia:  attendance,
+      examen:      exam,
+      final:       final,
+      actualizado: Date.now()
+    };
+  });
+
+  // Calcular promedio general de los parciales con calificación
+  const vals = Object.values(parciales).filter(v => v !== null).map(v => v.final);
+  const promedioGeneral = vals.length ? Math.round(vals.reduce((a,b) => a+b,0) / vals.length) : null;
+
+  // Escribir en /grades/{uid}/inglés/
+  const portalPayload = {
+    materia:   'inglés',
+    parciales,
+    promedio:  promedioGeneral,
+    uid,
+    nombre:    currentUser.name || '',
+    actualizado: Date.now()
+  };
+
+  await DB.ref('grades/' + uid + '/inglés').set(portalPayload);
 }
 
 // ============================================================
