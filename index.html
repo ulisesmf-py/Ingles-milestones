@@ -1487,24 +1487,55 @@ async function doLogin(role){
 
 // Enter handled in initLogin keydown listener above
 
-function doLogout(){
-  AUTH.signOut().catch(()=>{});
-  currentUser=null;
+async function doLogout(){
+  // Esperar que Firebase cierre sesión completamente
+  try { await AUTH.signOut(); } catch(e) {}
+
+  // Resetear TODO el estado global
+  currentUser   = null;
+  activeParcial = 'p1';
+
+  // Limpiar sesión guardada según toggle
   if(!_rememberOn.s){ localStorage.removeItem('ms_saved_user_s'); localStorage.removeItem('ms_saved_pass_s'); }
   if(!_rememberOn.t){ localStorage.removeItem('ms_saved_user_t'); localStorage.removeItem('ms_saved_pass_t'); }
+
+  // Limpiar DOM del app para evitar estado residual
+  const contentArea = document.getElementById('content-area');
+  if (contentArea) contentArea.innerHTML = '';
+  const sidebarNav = document.getElementById('sidebar-nav');
+  if (sidebarNav) sidebarNav.innerHTML = '';
+
+  // Mostrar login, ocultar app
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
+
+  // Restaurar tab de login al estado inicial (alumno)
+  switchTab('s');
 }
 
 async function startApp(){
+  if (!currentUser) return; // Seguridad: nunca arrancar sin usuario
+
+  // Limpiar contenido residual de sesión anterior
+  const contentArea = document.getElementById('content-area');
+  if (contentArea) contentArea.innerHTML = '';
+
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
-  // Load active parcial
-  const cfg=await dbGet('config');
-  activeParcial=(cfg&&cfg.activeParcial)||'p1';
-  document.getElementById('parcial-badge').textContent='Parcial: '+(activeParcial==='p1'?'1°':activeParcial==='p2'?'2°':'Final');
+
+  // Cargar parcial activo
+  const cfg = await dbGet('config');
+  activeParcial = (cfg && cfg.activeParcial) || 'p1';
+  const parcialBadge = document.getElementById('parcial-badge');
+  if (parcialBadge) parcialBadge.textContent = 'Parcial: ' + (activeParcial==='p1'?'1°':activeParcial==='p2'?'2°':'Final');
+
+  // Construir sidebar según el rol actual
   buildSidebar();
-  renderPage(currentUser.role==='admin'?'dashboard':'student-home');
+
+  // Navegar a la página correcta según rol
+  const startPage = currentUser.role === 'admin' ? 'dashboard' : 'student-home';
+  renderPage(startPage);
+
   loadNotifBell();
 }
 
