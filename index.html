@@ -309,6 +309,7 @@ tr:last-child td { border-bottom: none; }
   box-shadow: 0 24px 80px rgba(0,0,0,.3);
   animation: modalIn .25s cubic-bezier(.34,1.56,.64,1);
 }
+#modal-box.modal-wide { max-width: 800px; }
 @keyframes modalIn { from { transform: scale(.9) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
 #modal-box .modal-header { padding: 22px 26px 16px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
 #modal-box .modal-header h3 { font-size: 1.2rem; color: var(--gray-900); }
@@ -1324,10 +1325,13 @@ function toast(msg, type=''){
 // ============================================================
 // MODAL
 // ============================================================
-function openModal(title, bodyHtml, footerHtml=''){
+function openModal(title, bodyHtml, footerHtml='', wide=false){
   document.getElementById('modal-title').textContent=title;
   document.getElementById('modal-body').innerHTML=bodyHtml;
   document.getElementById('modal-footer').innerHTML=footerHtml;
+  const box = document.getElementById('modal-box');
+  if(wide) box.classList.add('modal-wide');
+  else box.classList.remove('modal-wide');
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
@@ -4429,11 +4433,266 @@ async function renderStudents(){
 
 // ── Buscador avanzado de alumnos ──────────────────────────
 async function openRosterSearch(){
-  const [allStudents, teacherUid] = [
-    await DB.ref('students').once('value').then(s=>s.val()),
-    AUTH.currentUser?.uid || 'admin'
-  ];
-  const roster = await DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()) || {};
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const [allStudents, roster] = await Promise.all([
+    DB.ref('students').once('value').then(s=>s.val()),
+    DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()).then(v=>v||{})
+  ]);
+
+  // ── Filtro real de inglés ──
+  // Un alumno es de inglés si tiene materias.ingles=true en su nodo /students/{uid}/materias/
+  // O si tiene materia='ingles' directamente
+  const isIngles = (s) => {
+    if (!s) return false;
+    if (s.materia === 'ingles' || s.materia === 'inglés') return true;
+    if (s.materias) {
+      const m = s.materias;
+      if (m.ingles === true || m.inglés === true) return true;
+      if (typeof m.ingles === 'string') return true;
+      if (typeof m.inglés === 'string') return true;
+    }
+    return false;
+  };
+
+  const inRoster    = []; // ya en mi curso
+  const inglesAvail = []; // inglés, disponibles
+  const otrosAvail  = []; // otras materias, disponibles
+
+  if (allStudents) {
+    Object.entries(allStudents).forEach(([uid, s]) => {
+      const obj = { uid, ...s };
+      if (roster[uid]) { inRoster.push(obj); return; }
+      if (isIngles(s)) inglesAvail.push(obj);
+      else otrosAvail.push(obj);
+    });
+  }
+  const sortFn = (a,b) => (a.name||'').localeCompare(b.name||'');
+  inRoster.sort(sortFn); inglesAvail.sort(sortFn); otrosAvail.sort(sortFn);
+
+  // ── Módulos del libro (basado en el grupo del alumno) ──
+  const getModulo = (s) => {
+    const g = (s.group||s.grupo||'').trim();
+    if (!g) return null;
+    const n = g.match(/(\d)/);
+    return n ? n[1] : null;
+  };
+
+  const MODULO_INFO = {
+    '1': { label:'Módulo 1', desc:'All about me', color:'#3b82f6' },
+    '2': { label:'Módulo 2', desc:'My world & Routines', color:'#8b5cf6' },
+    '3': { label:'Módulo 3', desc:'Stories & Past', color:'#f59e0b' },
+    '4': { label:'Módulo 4', desc:'Achievements', color:'#10b981' },
+  };
+
+  // Agrupar por módulo, luego por grupo dentro del módulo
+  const groupByModulo = (list) => {
+    const map = { '1':[], '2':[], '3':[], '4':[], 'sin':[] };
+    list.forEach(s => {
+      const m = getModulo(s);
+      if (m && map[m]) map[m].push(s);
+      else map['sin'].push(s);
+    });
+    return map;
+  };
+
+  // Renderizar card seleccionable
+  const card = (s, disabled=false) => `
+    <div class="rs-card${disabled?' rs-done':''}"
+      data-uid="${s.uid}"
+      data-name="${(s.name||'').toLowerCase()}"
+      data-user="${(s.username||'').toLowerCase()}"
+      data-group="${(s.group||s.grupo||'').toLowerCase()}"
+      ${disabled ? '' : `onclick="rsToggle('${s.uid}',this)"`}
+      style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+        border-radius:10px;border:2px solid ${disabled?'#bbf7d0':'#e2e8f0'};
+        background:${disabled?'#f0fdf4':'#fff'};cursor:${disabled?'default':'pointer'};
+        transition:all .15s;user-select:none;margin-bottom:0;">
+      <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+        background:${disabled?'linear-gradient(135deg,#10b981,#059669)':'linear-gradient(135deg,#6366f1,#3b82f6)'};
+        display:flex;align-items:center;justify-content:center;
+        color:#fff;font-weight:800;font-size:.9rem;">
+        ${(s.name||'?')[0].toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:.83rem;color:#1e293b;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${s.name||'Sin nombre'}
+          ${disabled?'<span style="font-size:.62rem;color:#059669;margin-left:4px;">✓ En curso</span>':''}
+        </div>
+        <div style="font-size:.72rem;color:#94a3b8;">
+          ${s.username||''} ${s.group||s.grupo?'· Gr. '+(s.group||s.grupo):''}
+        </div>
+      </div>
+      ${disabled
+        ? '<span style="color:#10b981;font-size:1rem;flex-shrink:0;">✓</span>'
+        : `<div id="ck-${s.uid}" style="width:20px;height:20px;border-radius:5px;
+            border:2px solid #cbd5e1;flex-shrink:0;background:#fff;
+            display:flex;align-items:center;justify-content:center;transition:all .15s;"></div>`
+      }
+    </div>`;
+
+  // Renderizar sección de módulo
+  const moduloSection = (key, list, disabled=false) => {
+    if (!list || list.length===0) return '';
+    const info = MODULO_INFO[key];
+    const sectionLabel = info
+      ? `<span style="color:${info.color};font-weight:800;">${info.label}</span> <span style="color:#94a3b8;font-weight:500;">${info.desc}</span>`
+      : `<span style="color:#94a3b8;font-weight:700;">Sin módulo asignado</span>`;
+    const borderColor = info?.color || '#cbd5e1';
+    return `
+      <div class="rs-modulo" data-modulo="${key}" style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;
+          padding:6px 10px;background:#f8fafc;border-radius:8px;border-left:3px solid ${borderColor};">
+          <span style="font-size:.72rem;">${sectionLabel}</span>
+          <span style="font-size:.68rem;color:#94a3b8;margin-left:auto;white-space:nowrap;">
+            ${list.length} alumno${list.length!==1?'s':''}
+          </span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          ${list.map(s=>card(s,disabled)).join('')}
+        </div>
+      </div>`;
+  };
+
+  const inglesMap = groupByModulo(inglesAvail);
+  const otrosMap  = groupByModulo(otrosAvail);
+  const rosterMap = groupByModulo(inRoster);
+
+  const buildPanelContent = (map, disabled=false) => {
+    const sections = ['1','2','3','4'].map(m=>moduloSection(m,map[m]||[],disabled)).join('');
+    const sinMod = moduloSection('sin', map['sin']||[], disabled);
+    if (!sections && !sinMod) return '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:.85rem;">No hay alumnos en esta categoría</div>';
+    return sections + sinMod;
+  };
+
+  // Incluir "ya en curso" al final del panel de inglés (disabled)
+  const inglesPanel = buildPanelContent(inglesMap, false) +
+    (inRoster.length ? `
+      <div style="margin-top:14px;padding-top:12px;border-top:2px dashed #bbf7d0;">
+        <div style="font-size:.72rem;color:#059669;font-weight:800;margin-bottom:8px;padding:0 4px;">
+          ✅ Ya en tu curso (${inRoster.length})
+        </div>
+        ${buildPanelContent(rosterMap, true)}
+      </div>` : '');
+
+  // Abrir modal grande
+  // Override modal width via inline style on the modal container
+  openModal('🔍 Agregar alumno al curso', `
+    <style>
+      .rs-card:hover:not(.rs-done){background:#f0f9ff!important;border-color:#93c5fd!important;}
+      .rs-card.sel{background:#eff6ff!important;border-color:#3b82f6!important;}
+      .rs-tab2{padding:8px 16px;border-bottom:3px solid transparent;font-size:.82rem;
+        font-weight:700;cursor:pointer;color:#94a3b8;transition:all .2s;white-space:nowrap;}
+      .rs-tab2.on{color:#3b82f6;border-bottom-color:#3b82f6;}
+      @media(max-width:500px){[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;}}
+    </style>
+
+    <!-- Búsqueda -->
+    <div style="position:relative;margin-bottom:10px;">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none;">🔍</span>
+      <input id="rs-q" placeholder="Buscar por nombre, usuario o grupo..."
+        style="width:100%;padding:10px 12px 10px 34px;border:1.5px solid #e2e8f0;
+          border-radius:10px;font-size:.85rem;box-sizing:border-box;outline:none;"
+        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"
+        oninput="rsFilter(this.value)">
+    </div>
+
+    <!-- Parcial -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:.75rem;font-weight:700;color:#64748b;white-space:nowrap;">Asignar parcial:</span>
+      <select id="roster-parcial" style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.82rem;">
+        <option value="p1" ${activeParcial==='p1'?'selected':''}>1er Parcial</option>
+        <option value="p2" ${activeParcial==='p2'?'selected':''}>2do Parcial</option>
+        <option value="p3" ${activeParcial==='p3'?'selected':''}>Final</option>
+      </select>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:2px solid #e2e8f0;margin-bottom:12px;gap:0;">
+      <div class="rs-tab2 on" id="tab-ing" onclick="rsTab('ing',this)">
+        🎓 Inglés
+        <span style="background:#eff6ff;color:#3b82f6;font-size:.68rem;
+          padding:1px 7px;border-radius:99px;margin-left:4px;">${inglesAvail.length}</span>
+      </div>
+      <div class="rs-tab2" id="tab-otros" onclick="rsTab('otros',this)">
+        📚 Otras materias
+        <span style="background:#f1f5f9;color:#64748b;font-size:.68rem;
+          padding:1px 7px;border-radius:99px;margin-left:4px;">${otrosAvail.length}</span>
+      </div>
+    </div>
+
+    <!-- Panel inglés -->
+    <div id="rs-p-ing" style="max-height:340px;overflow-y:auto;padding-right:4px;">
+      ${inglesPanel || '<div style="text-align:center;padding:30px;color:#94a3b8;">No hay alumnos de inglés sin agregar</div>'}
+    </div>
+
+    <!-- Panel otras materias -->
+    <div id="rs-p-otros" style="display:none;max-height:340px;overflow-y:auto;padding-right:4px;">
+      ${buildPanelContent(otrosMap, false)}
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;flex-wrap:wrap;gap:6px;">
+      <div id="rs-count" style="font-size:.78rem;color:#64748b;font-weight:600;">
+        Ningún alumno seleccionado
+      </div>
+      <a href="https://new-student.pages.dev" target="_blank"
+        style="font-size:.75rem;color:#3b82f6;font-weight:700;text-decoration:none;">
+        ➕ Alumno nuevo →
+      </a>
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="addSelectedToRoster()">Agregar al curso ✅</button>`,
+    true // wide modal
+  );
+  window._rosterSelected = new Set();
+}
+
+function rsTab(key, el){
+  document.querySelectorAll('.rs-tab2').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('rs-p-ing').style.display  = key==='ing'   ? '' : 'none';
+  document.getElementById('rs-p-otros').style.display = key==='otros' ? '' : 'none';
+}
+
+function rsToggle(uid, el){
+  if (!window._rosterSelected) window._rosterSelected = new Set();
+  if(_rosterSelected.has(uid)){
+    _rosterSelected.delete(uid);
+    el.classList.remove('sel');
+    el.style.background='#fff'; el.style.borderColor='#e2e8f0';
+    const ck=document.getElementById('ck-'+uid);
+    if(ck){ck.style.background='#fff';ck.style.borderColor='#cbd5e1';ck.innerHTML='';}
+  } else {
+    _rosterSelected.add(uid);
+    el.classList.add('sel');
+    el.style.background='#eff6ff'; el.style.borderColor='#3b82f6';
+    const ck=document.getElementById('ck-'+uid);
+    if(ck){
+      ck.style.background='#3b82f6'; ck.style.borderColor='#3b82f6';
+      ck.innerHTML='<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polyline points="2,5.5 4.5,8 9,2.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+  }
+  const n=_rosterSelected.size;
+  const cnt=document.getElementById('rs-count');
+  if(cnt) cnt.textContent = n===0?'Ningún alumno seleccionado':`${n} alumno${n!==1?'s':''} seleccionado${n!==1?'s':''}`;
+}
+
+function rsFilter(q){
+  q=(q||'').toLowerCase().trim();
+  document.querySelectorAll('.rs-card').forEach(el=>{
+    const show=!q||
+      (el.dataset.name||'').includes(q)||
+      (el.dataset.user||'').includes(q)||
+      (el.dataset.group||'').includes(q);
+    el.style.display=show?'':'none';
+  });
+  document.querySelectorAll('.rs-modulo').forEach(sec=>{
+    const any=[...sec.querySelectorAll('.rs-card')].some(c=>c.style.display!=='none');
+    sec.style.display=any?'':'none';
+  });
+}
 
   // Clasificar alumnos
   // "Inglés" = tiene materias.ingles=true, o email @student.blackai.com con materia ingles, o campo materia='ingles'
@@ -4521,168 +4780,14 @@ async function openRosterSearch(){
       }
     </div>`;
 
-  // Renderizar sección de módulo con header colapsable
-  const renderModuloSection = (modNum, students, disabled=false) => {
-    if (!students || students.length===0) return '';
-    const label = MODULO_LABELS[modNum] || 'Módulo '+modNum;
-    const colors = {'1':'#3b82f6','2':'#8b5cf6','3':'#f59e0b','4':'#10b981','0':'#94a3b8'};
-    const color = colors[modNum] || '#64748b';
-    return `
-      <div class="rs-module-section" data-modulo="${modNum}">
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 4px;margin-bottom:6px;
-             border-bottom:2px solid ${color}20;">
-          <div style="width:4px;height:20px;background:${color};border-radius:2px;flex-shrink:0;"></div>
-          <span style="font-size:.75rem;font-weight:800;color:${color};letter-spacing:.04em;text-transform:uppercase;">
-            ${label}
-          </span>
-          <span style="font-size:.72rem;color:#94a3b8;margin-left:auto;">${students.length} alumno${students.length!==1?'s':''}</span>
-        </div>
-        <div class="rs-cards-grid">
-          ${students.map(s=>renderCard(s,disabled)).join('')}
-        </div>
-      </div>`;
-  };
 
-  // Construir tabs content
-  const inglesGrouped = groupByModulo(inglesAvail);
-  const otrosGrouped  = groupByModulo(otrosAvail);
-  const inRosterGrouped = groupByModulo(inRoster);
-
-  const inglesContent = Object.keys(inglesGrouped).length===0 && inRoster.length===0
-    ? '<div style="text-align:center;padding:30px 0;color:#94a3b8;font-size:.85rem;">Todos los alumnos de inglés ya están en tu curso</div>'
-    : Object.keys({'1':'','2':'','3':'','4':'','0':''}).map(m => {
-        const avail = inglesGrouped[m]||[];
-        const inC   = inRosterGrouped[m]||[];
-        return renderModuloSection(m, avail, false) +
-               (inC.length ? renderModuloSection(m+'-done', inC, true).replace('data-modulo="'+m+'-done"','data-modulo="'+m+'"') : '');
-      }).join('');
-
-  const otrosContent = Object.keys(otrosGrouped).length===0
-    ? '<div style="text-align:center;padding:30px 0;color:#94a3b8;font-size:.85rem;">No hay otros alumnos disponibles</div>'
-    : Object.keys(otrosGrouped).sort().map(m=>renderModuloSection(m, otrosGrouped[m], false)).join('');
-
-  openModal('🔍 Agregar alumno al curso', `
-    <style>
-      .rs-tabs{display:flex;gap:0;border-bottom:2px solid #e2e8f0;margin-bottom:12px;}
-      .rs-tab{flex:1;padding:9px 6px;text-align:center;font-size:.8rem;font-weight:700;
-              cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;
-              color:#94a3b8;transition:all .2s;}
-      .rs-tab.active{color:#3b82f6;border-bottom-color:#3b82f6;}
-      .rs-tab:hover:not(.active){color:#64748b;}
-      .rs-panel{display:none;} .rs-panel.active{display:block;}
-      .rs-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
-      .rs-disabled{pointer-events:none;}
-      .rs-card.selected{border-color:#3b82f6 !important;background:#eff6ff !important;}
-      @media(max-width:480px){.rs-cards-grid{grid-template-columns:1fr;}}
-    </style>
-
-    <!-- Barra de búsqueda siempre visible -->
-    <div style="position:relative;margin-bottom:10px;">
-      <input id="rs-search" placeholder="🔍 Buscar por nombre, usuario o grupo..."
-        style="width:100%;padding:10px 14px 10px 36px;border:1.5px solid #e2e8f0;border-radius:10px;
-               font-size:.85rem;box-sizing:border-box;outline:none;transition:border .2s;"
-        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"
-        oninput="rsFilter(this.value)">
-      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;">🔍</span>
-    </div>
-
-    <!-- Parcial selector -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-      <span style="font-size:.75rem;font-weight:700;color:#64748b;white-space:nowrap;">Asignar a:</span>
-      <select id="roster-parcial" style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.82rem;">
-        <option value="p1" ${activeParcial==='p1'?'selected':''}>1er Parcial</option>
-        <option value="p2" ${activeParcial==='p2'?'selected':''}>2do Parcial</option>
-        <option value="p3" ${activeParcial==='p3'?'selected':''}>Final</option>
-      </select>
-    </div>
-
-    <!-- Tabs -->
-    <div class="rs-tabs">
-      <div class="rs-tab active" onclick="rsSwitchTab('ingles',this)">
-        🎓 Inglés
-        <span style="background:#3b82f620;color:#3b82f6;font-size:.68rem;padding:1px 6px;border-radius:99px;margin-left:4px;">
-          ${inglesAvail.length}
-        </span>
-      </div>
-      <div class="rs-tab" onclick="rsSwitchTab('otros',this)">
-        📚 Otras materias
-        <span style="background:#f1f5f9;color:#64748b;font-size:.68rem;padding:1px 6px;border-radius:99px;margin-left:4px;">
-          ${otrosAvail.length}
-        </span>
-      </div>
-    </div>
-
-    <!-- Panel Inglés -->
-    <div id="rs-panel-ingles" class="rs-panel active" style="max-height:320px;overflow-y:auto;padding-right:2px;">
-      ${inglesContent}
-    </div>
-
-    <!-- Panel Otras materias -->
-    <div id="rs-panel-otros" class="rs-panel" style="max-height:320px;overflow-y:auto;padding-right:2px;">
-      ${otrosContent}
-    </div>
-
-    <!-- Contador y tip -->
-    <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-      <div id="roster-selected-count" style="font-size:.78rem;color:#64748b;font-weight:600;">
-        Ningún alumno seleccionado
-      </div>
-      <a href="https://new-student.pages.dev" target="_blank"
-         style="font-size:.75rem;color:#3b82f6;font-weight:700;text-decoration:none;">
-        ➕ Registrar alumno nuevo →
-      </a>
-    </div>`,
-    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="addSelectedToRoster()">Agregar al curso ✅</button>`
-  );
-  window._rosterSelected = new Set();
+function isInglesStudent(s){
+  if (!s) return false;
+  if (s.materia === 'ingles' || s.materia === 'inglés') return true;
+  if (s.materias && (s.materias.ingles === true || s.materias.inglés === true)) return true;
+  return false;
 }
 
-function rsSwitchTab(tab, el){
-  document.querySelectorAll('.rs-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.rs-panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('rs-panel-'+tab).classList.add('active');
-}
-
-function rsFilter(q){
-  q = q.toLowerCase().trim();
-  document.querySelectorAll('.rs-card').forEach(el=>{
-    const name  = el.dataset.name||'';
-    const user  = el.dataset.user||'';
-    const group = el.dataset.group||'';
-    el.style.display = (!q||name.includes(q)||user.includes(q)||group.includes(q)) ? '' : 'none';
-  });
-  // Ocultar secciones de módulo vacías
-  document.querySelectorAll('.rs-module-section').forEach(sec=>{
-    const visible = [...sec.querySelectorAll('.rs-card')].some(c=>c.style.display!=='none');
-    sec.style.display = visible ? '' : 'none';
-  });
-}
-// rsFilter handles search (defined above in openRosterSearch section)
-
-async function addSelectedToRoster(){
-  if(_rosterSelected.size===0){ toast('Selecciona al menos un alumno','error'); return; }
-  const teacherUid = AUTH.currentUser?.uid || 'admin';
-  const parcial = document.getElementById('roster-parcial')?.value || activeParcial;
-  const allStudents = await DB.ref('students').once('value').then(s=>s.val()) || {};
-  const updates = {};
-  _rosterSelected.forEach(uid=>{
-    const s = allStudents[uid] || {};
-    const g = (s.group||'').trim();
-    const n = g.match(/\d/);
-    const modulo = n ? 'Módulo '+n[0] : 'Sin módulo';
-    updates['milestone/roster/'+teacherUid+'/'+uid] = {
-      addedAt: Date.now(), parcial, modulo, addedBy: currentUser.username
-    };
-  });
-  await DB.ref().update(updates);
-  SFX.success();
-  toast(`${_rosterSelected.size} alumno(s) agregado(s) al curso ✅`,'success');
-  _rosterSelected = new Set();
-  closeModal();
-  renderStudents();
-}
 
 async function removeFromRoster(uid, name){
   if(!confirm(`¿Quitar a ${name} de tu lista? (No se elimina su cuenta)`)) return;
