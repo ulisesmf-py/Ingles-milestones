@@ -3268,152 +3268,368 @@ const ACT_TYPES = [
 // VOCABULARY DATA — flashcards per week
 // ============================================================
 const VOCAB_DATA = {
+// W1 — Greetings, Commands, Alphabet, Numbers, Occupations, Verb to be
 W1:[
-  {word:'music genre',emoji:'🎼',hint:'género musical'},
-  {word:'rock',emoji:'🎸',hint:'rock (género)'},
-  {word:'jazz',emoji:'🎷',hint:'jazz (género)'},
-  {word:'reggae',emoji:'🌴',hint:'reggae (género)'},
-  {word:'pop',emoji:'🎵',hint:'pop (género)'},
-  {word:'classical',emoji:'🎻',hint:'clásica (música)'},
-  {word:'hip-hop',emoji:'🎤',hint:'hip-hop (género)'},
-  {word:'concert',emoji:'🎪',hint:'concierto'},
-  {word:'singer',emoji:'🎙️',hint:'cantante'},
-  {word:'band',emoji:'🎶',hint:'banda / grupo'},
+  {word:'hello / hi',emoji:'👋',hint:'hola'},
+  {word:'goodbye',emoji:'👋',hint:'adiós'},
+  {word:'good morning',emoji:'🌅',hint:'buenos días'},
+  {word:'good afternoon',emoji:'☀️',hint:'buenas tardes'},
+  {word:'stand up',emoji:'⬆️',hint:'levántate / párate'},
+  {word:'sit down',emoji:'⬇️',hint:'siéntate'},
+  {word:'open your book',emoji:'📖',hint:'abre tu libro'},
+  {word:'listen',emoji:'👂',hint:'escucha'},
+  {word:'write',emoji:'✏️',hint:'escribe'},
+  {word:'teacher',emoji:'👩‍🏫',hint:'maestro/a'},
+  {word:'student',emoji:'🎓',hint:'estudiante'},
+  {word:'doctor',emoji:'👨‍⚕️',hint:'médico/a'},
+  {word:'nurse',emoji:'👩‍⚕️',hint:'enfermero/a'},
+  {word:'engineer',emoji:'👷',hint:'ingeniero/a'},
+  {word:'police officer',emoji:'👮',hint:'policía'},
 ],
+// W2 — Countries, Nationalities, Physical traits, Have/has, Articles, Demonstratives
 W2:[
-  {word:'suspect',emoji:'🕵️',hint:'sospechoso/a'},
-  {word:'witness',emoji:'👁️',hint:'testigo'},
-  {word:'interview',emoji:'🎙️',hint:'entrevista'},
-  {word:'description',emoji:'📝',hint:'descripción'},
+  {word:'Mexico',emoji:'🇲🇽',hint:'México'},
+  {word:'USA',emoji:'🇺🇸',hint:'Estados Unidos'},
+  {word:'Canada',emoji:'🇨🇦',hint:'Canadá'},
+  {word:'France',emoji:'🇫🇷',hint:'Francia'},
+  {word:'Japan',emoji:'🇯🇵',hint:'Japón'},
+  {word:'Spain',emoji:'🇪🇸',hint:'España'},
+  {word:'Mexican',emoji:'🌮',hint:'mexicano/a'},
+  {word:'American',emoji:'🦅',hint:'estadounidense'},
+  {word:'French',emoji:'🥖',hint:'francés/a'},
+  {word:'Japanese',emoji:'🌸',hint:'japonés/a'},
   {word:'tall',emoji:'📏',hint:'alto/a'},
-  {word:'jacket',emoji:'🧥',hint:'chamarra / chaqueta'},
-  {word:'reliable',emoji:'✅',hint:'confiable'},
-  {word:'nervous',emoji:'😰',hint:'nervioso/a'},
-  {word:'alibi',emoji:'📋',hint:'coartada'},
-  {word:'crime',emoji:'🚨',hint:'crimen / delito'},
+  {word:'short',emoji:'🔽',hint:'bajo/a'},
+  {word:'brown eyes',emoji:'👁️',hint:'ojos cafés'},
+  {word:'dark hair',emoji:'💇',hint:'cabello oscuro'},
+  {word:'nationality',emoji:'🌍',hint:'nacionalidad'},
 ],
+// W3 — My Classroom, Prepositions of time
 W3:[
-  {word:'Día de los Muertos',emoji:'💀',hint:'Day of the Dead'},
-  {word:'ofrenda',emoji:'🕯️',hint:'altar de muertos'},
-  {word:'marigold',emoji:'🌼',hint:'cempasúchil'},
-  {word:'Guelaguetza',emoji:'💃',hint:'festival de Oaxaca'},
-  {word:'Posadas',emoji:'⭐',hint:'posadas navideñas'},
-  {word:'costume',emoji:'👻',hint:'disfraz'},
-  {word:'decoration',emoji:'🎊',hint:'decoración'},
-  {word:'calaca',emoji:'☠️',hint:'esqueleto decorativo'},
-  {word:'celebration',emoji:'🎉',hint:'celebración'},
-  {word:'tradition',emoji:'🏺',hint:'tradición'},
+  {word:'pencil',emoji:'✏️',hint:'lápiz'},
+  {word:'pen',emoji:'🖊️',hint:'bolígrafo'},
+  {word:'ruler',emoji:'📏',hint:'regla'},
+  {word:'eraser',emoji:'🧽',hint:'borrador'},
+  {word:'notebook',emoji:'📓',hint:'cuaderno'},
+  {word:'pencil case',emoji:'🖊️',hint:'estuche'},
+  {word:'desk',emoji:'🪑',hint:'escritorio'},
+  {word:'blackboard',emoji:'📋',hint:'pizarrón'},
+  {word:'on',emoji:'⬆️',hint:'sobre / encima de'},
+  {word:'under',emoji:'⬇️',hint:'debajo de'},
+  {word:'in',emoji:'📦',hint:'dentro de'},
+  {word:'next to',emoji:'↔️',hint:'al lado de'},
+  {word:'at',emoji:'📍',hint:'a las (hora)'},
+  {word:'in the morning',emoji:'🌅',hint:'en la mañana'},
+  {word:'on Monday',emoji:'📅',hint:'los lunes'},
 ],
+// W4 — Food and drink, Countable/Uncountable, Much/Many, Quantifiers
 W4:[
-  {word:'could',emoji:'💪',hint:'podía (habilidad pasada)'},
-  {word:'ability',emoji:'🌟',hint:'habilidad'},
-  {word:'swim',emoji:'🏊',hint:'nadar'},
-  {word:'ride a bike',emoji:'🚲',hint:'andar en bicicleta'},
-  {word:'climb',emoji:'🧗',hint:'escalar / trepar'},
-  {word:'paint',emoji:'🎨',hint:'pintar'},
-  {word:'cook',emoji:'🍳',hint:'cocinar'},
-  {word:'speak',emoji:'🗣️',hint:'hablar (un idioma)'},
-  {word:"couldn't",emoji:'🚫',hint:'no podía'},
-  {word:'as a child',emoji:'👶',hint:'de niño/a'},
+  {word:'apple',emoji:'🍎',hint:'manzana'},
+  {word:'orange',emoji:'🍊',hint:'naranja'},
+  {word:'banana',emoji:'🍌',hint:'plátano'},
+  {word:'bread',emoji:'🍞',hint:'pan'},
+  {word:'milk',emoji:'🥛',hint:'leche'},
+  {word:'water',emoji:'💧',hint:'agua'},
+  {word:'juice',emoji:'🥤',hint:'jugo'},
+  {word:'egg',emoji:'🥚',hint:'huevo'},
+  {word:'rice',emoji:'🍚',hint:'arroz'},
+  {word:'cheese',emoji:'🧀',hint:'queso'},
+  {word:'some',emoji:'➕',hint:'algo de / algunos'},
+  {word:'any',emoji:'❓',hint:'algún/alguna (neg/int)'},
+  {word:'much',emoji:'💧',hint:'mucho (incontable)'},
+  {word:'many',emoji:'🍎',hint:'muchos (contable)'},
+  {word:'a lot of',emoji:'📦',hint:'mucho / muchos'},
 ],
+// W5 — Parts of house, Furniture, Family, Personal objects, There is/are, Prepositions of place
 W5:[
-  {word:'park',emoji:'🌳',hint:'parque'},
-  {word:'farm',emoji:'🌾',hint:'granja'},
-  {word:'river',emoji:'🏞️',hint:'río'},
-  {word:'building',emoji:'🏢',hint:'edificio'},
-  {word:'countryside',emoji:'🌄',hint:'campo / zona rural'},
-  {word:'traffic',emoji:'🚗',hint:'tráfico'},
-  {word:'lake',emoji:'🏞️',hint:'lago'},
-  {word:'village',emoji:'🏡',hint:'aldea / pueblo pequeño'},
-  {word:'shop',emoji:'🏪',hint:'tienda'},
-  {word:'mountain',emoji:'⛰️',hint:'montaña'},
+  {word:'living room',emoji:'🛋️',hint:'sala'},
+  {word:'bedroom',emoji:'🛏️',hint:'recámara'},
+  {word:'kitchen',emoji:'🍳',hint:'cocina'},
+  {word:'bathroom',emoji:'🚿',hint:'baño'},
+  {word:'garden',emoji:'🌻',hint:'jardín'},
+  {word:'sofa',emoji:'🛋️',hint:'sofá'},
+  {word:'table',emoji:'🪑',hint:'mesa'},
+  {word:'lamp',emoji:'💡',hint:'lámpara'},
+  {word:'there is',emoji:'1️⃣',hint:'hay (singular)'},
+  {word:'there are',emoji:'🔢',hint:'hay (plural)'},
+  {word:'between',emoji:'↔️',hint:'entre'},
+  {word:'next to',emoji:'➡️',hint:'al lado de'},
+  {word:'brother',emoji:'👦',hint:'hermano'},
+  {word:'sister',emoji:'👧',hint:'hermana'},
+  {word:'parents',emoji:'👨‍👩‍👧',hint:'padres'},
 ],
+// W6 — Daily Routines, Months and dates, Present Simple
 W6:[
-  {word:'museum',emoji:'🏛️',hint:'museo'},
-  {word:'exhibition',emoji:'🖼️',hint:'exhibición'},
-  {word:'painting',emoji:'🎨',hint:'pintura / cuadro'},
-  {word:'sculpture',emoji:'🗿',hint:'escultura'},
-  {word:'cafeteria',emoji:'☕',hint:'cafetería'},
-  {word:'gift shop',emoji:'🛍️',hint:'tienda de regalos'},
-  {word:'tour guide',emoji:'👨‍🏫',hint:'guía de turistas'},
-  {word:'ticket office',emoji:'🎫',hint:'taquilla'},
-  {word:'interactive',emoji:'🎮',hint:'interactivo/a'},
-  {word:'ancient',emoji:'🏺',hint:'antiguo/a'},
+  {word:'wake up',emoji:'⏰',hint:'despertarse'},
+  {word:'have breakfast',emoji:'🍳',hint:'desayunar'},
+  {word:'go to school',emoji:'🏫',hint:'ir a la escuela'},
+  {word:'have lunch',emoji:'🍱',hint:'almorzar'},
+  {word:'do homework',emoji:'📝',hint:'hacer tarea'},
+  {word:'have dinner',emoji:'🍽️',hint:'cenar'},
+  {word:'go to bed',emoji:'🛏️',hint:'ir a dormir'},
+  {word:'January',emoji:'❄️',hint:'enero'},
+  {word:'February',emoji:'💝',hint:'febrero'},
+  {word:'March',emoji:'🌺',hint:'marzo'},
+  {word:'April',emoji:'🌧️',hint:'abril'},
+  {word:'August',emoji:'☀️',hint:'agosto'},
+  {word:'December',emoji:'🎄',hint:'diciembre'},
+  {word:'every day',emoji:'📅',hint:'todos los días'},
+  {word:'always',emoji:'✅',hint:'siempre'},
 ],
+// W7 — Personal objects, Family, Possessives review
 W7:[
-  {word:'movie / film',emoji:'🎬',hint:'película'},
-  {word:'sequel',emoji:'🎥',hint:'secuela'},
-  {word:'director',emoji:'🎬',hint:'director/a'},
-  {word:'actor / actress',emoji:'⭐',hint:'actor / actriz'},
-  {word:'special effects',emoji:'✨',hint:'efectos especiales'},
-  {word:'boring',emoji:'😴',hint:'aburrido/a'},
-  {word:'exciting',emoji:'🎉',hint:'emocionante'},
-  {word:'comedy',emoji:'😂',hint:'comedia'},
-  {word:'horror',emoji:'👻',hint:'terror'},
-  {word:'western',emoji:'🤠',hint:'película del oeste'},
+  {word:'phone',emoji:'📱',hint:'teléfono'},
+  {word:'bag / backpack',emoji:'🎒',hint:'mochila'},
+  {word:'keys',emoji:'🔑',hint:'llaves'},
+  {word:'wallet',emoji:'👛',hint:'cartera'},
+  {word:'glasses',emoji:'👓',hint:'lentes'},
+  {word:'headphones',emoji:'🎧',hint:'audífonos'},
+  {word:'watch',emoji:'⌚',hint:'reloj'},
+  {word:'my',emoji:'🙋',hint:'mi / mis'},
+  {word:'your',emoji:'👉',hint:'tu / tus'},
+  {word:'his',emoji:'👦',hint:'su (de él)'},
+  {word:'her',emoji:'👧',hint:'su (de ella)'},
+  {word:'our',emoji:'👨‍👩‍👧',hint:'nuestro/a'},
+  {word:'their',emoji:'👥',hint:'su (de ellos)'},
+  {word:'mine',emoji:'🙋',hint:'el mío / la mía'},
+  {word:'yours',emoji:'👉',hint:'el tuyo / la tuya'},
 ],
+// W8 — Activities, Frequency Adverbs
 W8:[
-  {word:'comic',emoji:'📕',hint:'cómic'},
-  {word:'superhero',emoji:'🦸',hint:'superhéroe'},
-  {word:'villain',emoji:'😈',hint:'villano/a'},
-  {word:'robot',emoji:'🤖',hint:'robot'},
-  {word:'spaceship',emoji:'🚀',hint:'nave espacial'},
-  {word:'planet',emoji:'🪐',hint:'planeta'},
-  {word:'powerful',emoji:'💥',hint:'poderoso/a'},
-  {word:'brave',emoji:'🛡️',hint:'valiente'},
-  {word:'intelligent',emoji:'🧠',hint:'inteligente'},
-  {word:'science fiction',emoji:'🌌',hint:'ciencia ficción'},
+  {word:'play sports',emoji:'⚽',hint:'practicar deportes'},
+  {word:'read',emoji:'📚',hint:'leer'},
+  {word:'watch TV',emoji:'📺',hint:'ver televisión'},
+  {word:'listen to music',emoji:'🎵',hint:'escuchar música'},
+  {word:'exercise',emoji:'🏋️',hint:'hacer ejercicio'},
+  {word:'cook',emoji:'🍳',hint:'cocinar'},
+  {word:'always',emoji:'💯',hint:'siempre (100%)'},
+  {word:'usually',emoji:'🔄',hint:'generalmente (80%)'},
+  {word:'sometimes',emoji:'🔀',hint:'a veces (50%)'},
+  {word:'rarely',emoji:'🔻',hint:'raramente (20%)'},
+  {word:'never',emoji:'🚫',hint:'nunca (0%)'},
+  {word:'often',emoji:'📈',hint:'frecuentemente'},
+  {word:'once a week',emoji:'1️⃣',hint:'una vez a la semana'},
+  {word:'twice a week',emoji:'2️⃣',hint:'dos veces a la semana'},
+  {word:'how often',emoji:'❓',hint:'¿con qué frecuencia?'},
 ],
+// W9 — Places in Town, Wh-questions
 W9:[
-  {word:'cultural spot',emoji:'🗺️',hint:'lugar cultural'},
-  {word:'ruins',emoji:'🏚️',hint:'ruinas'},
-  {word:'Teotihuacan',emoji:'🏛️',hint:'pirámides de Teotihuacán'},
-  {word:'vacation',emoji:'✈️',hint:'vacaciones'},
-  {word:'tourism',emoji:'📸',hint:'turismo'},
-  {word:'plan',emoji:'📋',hint:'plan / planear'},
-  {word:'predict',emoji:'🔮',hint:'predecir'},
-  {word:'sunny',emoji:'☀️',hint:'soleado/a'},
-  {word:'cloudy',emoji:'⛅',hint:'nublado/a'},
-  {word:'Chichen Itza',emoji:'🏛️',hint:'zona arqueológica de Yucatán'},
-],
-W10:[
+  {word:'bank',emoji:'🏦',hint:'banco'},
   {word:'pharmacy',emoji:'💊',hint:'farmacia'},
-  {word:'post office',emoji:'📮',hint:'oficina de correos'},
   {word:'hospital',emoji:'🏥',hint:'hospital'},
   {word:'library',emoji:'📚',hint:'biblioteca'},
-  {word:'cultural center',emoji:'🏛️',hint:'centro cultural'},
+  {word:'post office',emoji:'📮',hint:'oficina de correos'},
+  {word:'supermarket',emoji:'🛒',hint:'supermercado'},
   {word:'park',emoji:'🌳',hint:'parque'},
-  {word:'mall',emoji:'🛍️',hint:'centro comercial'},
-  {word:'stadium',emoji:'🏟️',hint:'estadio'},
-  {word:'bus stop',emoji:'🚌',hint:'parada de autobús'},
-  {word:'parking lot',emoji:'🅿️',hint:'estacionamiento'},
+  {word:'cinema',emoji:'🎬',hint:'cine'},
+  {word:'market',emoji:'🏪',hint:'mercado'},
+  {word:'where',emoji:'📍',hint:'¿dónde?'},
+  {word:'what',emoji:'❓',hint:'¿qué?'},
+  {word:'when',emoji:'🕐',hint:'¿cuándo?'},
+  {word:'who',emoji:'👤',hint:'¿quién?'},
+  {word:'how far',emoji:'📏',hint:'¿qué tan lejos?'},
+  {word:'how often',emoji:'🔄',hint:'¿con qué frecuencia?'},
+],
+// W10 — Sports & Exercise, Present Progressive affirmative
+W10:[
+  {word:'football / soccer',emoji:'⚽',hint:'fútbol'},
+  {word:'basketball',emoji:'🏀',hint:'básquetbol'},
+  {word:'swimming',emoji:'🏊',hint:'natación'},
+  {word:'cycling',emoji:'🚴',hint:'ciclismo'},
+  {word:'running',emoji:'🏃',hint:'correr'},
+  {word:'yoga',emoji:'🧘',hint:'yoga'},
+  {word:'tennis',emoji:'🎾',hint:'tenis'},
+  {word:'gym',emoji:'🏋️',hint:'gimnasio'},
+  {word:'is running',emoji:'🏃',hint:'está corriendo'},
+  {word:'is playing',emoji:'⚽',hint:'está jugando'},
+  {word:'is swimming',emoji:'🏊',hint:'está nadando'},
+  {word:'is cycling',emoji:'🚴',hint:'está pedaleando'},
+  {word:'are doing',emoji:'🤸',hint:'están haciendo'},
+  {word:'right now',emoji:'⏱️',hint:'ahora mismo'},
+  {word:'at the moment',emoji:'🕐',hint:'en este momento'},
+],
+// W11 — Clothes, Present Progressive negative & interrogative
+W11:[
+  {word:'T-shirt',emoji:'👕',hint:'camiseta'},
+  {word:'jacket',emoji:'🧥',hint:'chamarra'},
+  {word:'dress',emoji:'👗',hint:'vestido'},
+  {word:'trousers / pants',emoji:'👖',hint:'pantalones'},
+  {word:'shoes',emoji:'👟',hint:'zapatos'},
+  {word:'boots',emoji:'👢',hint:'botas'},
+  {word:'hat',emoji:'🎩',hint:'sombrero'},
+  {word:'scarf',emoji:'🧣',hint:'bufanda'},
+  {word:'glasses',emoji:'👓',hint:'lentes'},
+  {word:'uniform',emoji:'👔',hint:'uniforme'},
+  {word:'sandals',emoji:'👡',hint:'sandalias'},
+  {word:'coat',emoji:'🧥',hint:'abrigo'},
+  {word:'is not wearing',emoji:'🚫',hint:'no está usando'},
+  {word:'are not wearing',emoji:'🚫',hint:'no están usando'},
+  {word:'what are you wearing?',emoji:'❓',hint:'¿qué estás usando?'},
+],
+// W12 — Talents & Skills, Signs, Can/Can't
+W12:[
+  {word:'play the guitar',emoji:'🎸',hint:'tocar la guitarra'},
+  {word:'play the piano',emoji:'🎹',hint:'tocar el piano'},
+  {word:'sing',emoji:'🎤',hint:'cantar'},
+  {word:'dance',emoji:'💃',hint:'bailar'},
+  {word:'draw',emoji:'🎨',hint:'dibujar'},
+  {word:'speak English',emoji:'🗣️',hint:'hablar inglés'},
+  {word:'cook',emoji:'🍳',hint:'cocinar'},
+  {word:'swim',emoji:'🏊',hint:'nadar'},
+  {word:'can',emoji:'✅',hint:'puede / saber hacer'},
+  {word:"can't",emoji:'🚫',hint:'no puede / no sabe hacer'},
+  {word:'no parking',emoji:'🚫🅿️',hint:'prohibido estacionarse'},
+  {word:'no smoking',emoji:'🚭',hint:'prohibido fumar'},
+  {word:'no entry',emoji:'⛔',hint:'prohibido el paso'},
+  {word:'ability',emoji:'⭐',hint:'habilidad'},
+  {word:'request',emoji:'🙏',hint:'petición / solicitud'},
+],
+// W13 — Past Events, Past Simple affirmative (regular)
+W13:[
+  {word:'stayed',emoji:'🏠',hint:'se quedó (stay)'},
+  {word:'watched',emoji:'📺',hint:'vio / miró (watch)'},
+  {word:'walked',emoji:'🚶',hint:'caminó (walk)'},
+  {word:'finished',emoji:'✅',hint:'terminó (finish)'},
+  {word:'listened',emoji:'👂',hint:'escuchó (listen)'},
+  {word:'played',emoji:'⚽',hint:'jugó (play)'},
+  {word:'posted',emoji:'📮',hint:'envió (post)'},
+  {word:'enjoyed',emoji:'😊',hint:'disfrutó (enjoy)'},
+  {word:'used',emoji:'🔧',hint:'usó (use)'},
+  {word:'needed',emoji:'🆘',hint:'necesitó (need)'},
+  {word:'yesterday',emoji:'📅',hint:'ayer'},
+  {word:'last week',emoji:'📅',hint:'la semana pasada'},
+  {word:'last night',emoji:'🌙',hint:'anoche'},
+  {word:'last summer',emoji:'☀️',hint:'el verano pasado'},
+  {word:'ago',emoji:'⏪',hint:'hace (tiempo)'},
+],
+// W14 — Celebrations, Past Simple affirmative (irregular)
+W14:[
+  {word:'went',emoji:'🚶',hint:'fue / fueron (go)'},
+  {word:'made',emoji:'🍰',hint:'hizo / hicieron (make)'},
+  {word:'gave',emoji:'🎁',hint:'dio / dieron (give)'},
+  {word:'ate',emoji:'🍽️',hint:'comió / comieron (eat)'},
+  {word:'took',emoji:'📷',hint:'tomó / tomaron (take)'},
+  {word:'wrote',emoji:'✉️',hint:'escribió (write)'},
+  {word:'came',emoji:'🚗',hint:'vino / vinieron (come)'},
+  {word:'were',emoji:'😊',hint:'estaba/n / era/n (be)'},
+  {word:'birthday',emoji:'🎂',hint:'cumpleaños'},
+  {word:'Christmas',emoji:'🎄',hint:'Navidad'},
+  {word:'New Year',emoji:'🎆',hint:'Año Nuevo'},
+  {word:'quinceañera',emoji:'👗',hint:'fiesta de 15 años'},
+  {word:'festival',emoji:'🎊',hint:'festival'},
+  {word:'party',emoji:'🎉',hint:'fiesta'},
+  {word:'gift / present',emoji:'🎁',hint:'regalo'},
+],
+// W15 — Historical Events, Past Simple review
+W15:[
+  {word:'discovered',emoji:'🌎',hint:'descubrió (discover)'},
+  {word:'sank',emoji:'🚢',hint:'se hundió (sink)'},
+  {word:'walked',emoji:'🌕',hint:'caminó (walk)'},
+  {word:'built',emoji:'🏛️',hint:'construyó (build)'},
+  {word:'won',emoji:'🏆',hint:'ganó (win)'},
+  {word:'fell',emoji:'🧱',hint:'cayó (fall)'},
+  {word:'lived',emoji:'🦅',hint:'vivió/vivieron (live)'},
+  {word:'ended',emoji:'🕊️',hint:'terminó (end)'},
+  {word:'disappeared',emoji:'🦕',hint:'desapareció (disappear)'},
+  {word:'was invented',emoji:'📞',hint:'fue inventado (invent)'},
+  {word:'ancient',emoji:'🏺',hint:'antiguo/a'},
+  {word:'civilization',emoji:'🏛️',hint:'civilización'},
+  {word:'pyramid',emoji:'🔺',hint:'pirámide'},
+  {word:'century',emoji:'📅',hint:'siglo'},
+  {word:'invention',emoji:'💡',hint:'invento'},
+],
+// W16 — Weekend Activities, Past Achievements, Past Simple negative
+W16:[
+  {word:'did not go',emoji:'🚫',hint:'no fue/fueron'},
+  {word:'did not watch',emoji:'🚫📺',hint:'no vio/vieron'},
+  {word:'did not play',emoji:'🚫⚽',hint:'no jugó/jugaron'},
+  {word:'did not cook',emoji:'🚫🍳',hint:'no cocinó'},
+  {word:'did not travel',emoji:'🚫✈️',hint:'no viajó'},
+  {word:'hiking',emoji:'🥾',hint:'excursionismo / senderismo'},
+  {word:'camping',emoji:'⛺',hint:'acampar'},
+  {word:'cycling',emoji:'🚴',hint:'ciclismo'},
+  {word:'achievement',emoji:'🏅',hint:'logro'},
+  {word:'weekend',emoji:'📅',hint:'fin de semana'},
+  {word:'past',emoji:'⏪',hint:'pasado'},
+  {word:'activity',emoji:'🎯',hint:'actividad'},
+  {word:'during',emoji:'⏱️',hint:'durante'},
+  {word:'instead',emoji:'🔄',hint:'en vez de'},
+  {word:'unfortunately',emoji:'😞',hint:'desafortunadamente'},
+],
+// W17 — Sportspeople, Personality Traits, Past Simple interrogative, Adverbs of time
+W17:[
+  {word:'Did she go?',emoji:'❓',hint:'¿Fue ella?'},
+  {word:'Did they win?',emoji:'❓',hint:'¿Ganaron?'},
+  {word:'Did he travel?',emoji:'❓',hint:'¿Viajó él?'},
+  {word:'athlete',emoji:'🏃',hint:'atleta'},
+  {word:'champion',emoji:'🏆',hint:'campeón/campeona'},
+  {word:'coach',emoji:'👨‍🏫',hint:'entrenador/a'},
+  {word:'brave',emoji:'💪',hint:'valiente'},
+  {word:'creative',emoji:'🎨',hint:'creativo/a'},
+  {word:'friendly',emoji:'😊',hint:'amigable'},
+  {word:'patient',emoji:'🧘',hint:'paciente'},
+  {word:'hardworking',emoji:'💼',hint:'trabajador/a'},
+  {word:'yesterday',emoji:'📅',hint:'ayer'},
+  {word:'last year',emoji:'📅',hint:'el año pasado'},
+  {word:'before',emoji:'⏪',hint:'antes'},
+  {word:'after',emoji:'⏩',hint:'después'},
+],
+// W18 — Amazing People / to be past simple
+W18:[
+  {word:'was',emoji:'🔵',hint:'era / estaba (singular)'},
+  {word:'were',emoji:'🔵',hint:'eran / estaban (plural)'},
+  {word:'was not',emoji:'🚫',hint:'no era / no estaba'},
+  {word:'were not',emoji:'🚫',hint:'no eran / no estaban'},
+  {word:'Was she...?',emoji:'❓',hint:'¿Era ella...?'},
+  {word:'Were they...?',emoji:'❓',hint:'¿Eran ellos...?'},
+  {word:'painter',emoji:'🎨',hint:'pintor/a'},
+  {word:'scientist',emoji:'🔬',hint:'científico/a'},
+  {word:'inventor',emoji:'💡',hint:'inventor/a'},
+  {word:'physicist',emoji:'⚛️',hint:'físico/a'},
+  {word:'biography',emoji:'📖',hint:'biografía'},
+  {word:'talented',emoji:'⭐',hint:'talentoso/a'},
+  {word:'famous',emoji:'🌟',hint:'famoso/a'},
+  {word:'brilliant',emoji:'🧠',hint:'brillante'},
+  {word:'achievement',emoji:'🏅',hint:'logro'},
 ],
 };
-
-// ============================================================
-// IMGVOCAB_DATA — vocabulary lists for Activity 6 (teacher adds images)
-// ============================================================
 const IMGVOCAB_DATA = {
-W1:{title:'Music Genres – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el género musical correcto.',
-  words:['rock','jazz','reggae','pop','classical','hip-hop','concert','singer','band','music genre'],note:'🖼️ El docente agrega las imágenes en Actividades.'},
-W2:{title:'Suspects – Imagen y Vocabulario',instruction:'Relaciona cada imagen con la descripción correcta.',
-  words:['suspect','witness','tall','short','jacket','glasses','nervous','reliable','interview','description'],note:'🖼️ El docente agrega las imágenes de personas con descripciones.'},
-W3:{title:'Mexican Festivities – Imagen y Vocabulario',instruction:'Relaciona cada imagen con la festividad o elemento.',
-  words:['ofrenda','marigold','costume','calaca','Posadas','Guelaguetza','decoration','celebration','tradition','Día de los Muertos'],note:'🖼️ El docente agrega fotos de festividades mexicanas.'},
-W4:{title:'Past Abilities – Imagen y Vocabulario',instruction:'Relaciona cada imagen con la habilidad en el pasado.',
-  words:['swim','ride a bike','climb','paint','cook','dance','sing','read','write','speak'],note:'🖼️ El docente agrega imágenes de actividades.'},
-W5:{title:'City & Countryside – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el lugar correcto.',
-  words:['park','farm','river','building','lake','village','traffic','mountain','shop','bridge'],note:'🖼️ El docente agrega imágenes de lugares.'},
-W6:{title:'At the Museum – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el elemento del museo.',
-  words:['painting','sculpture','cafeteria','gift shop','ticket office','exhibition','tour guide','map','dinosaur','ancient artifact'],note:'🖼️ El docente agrega imágenes del museo.'},
-W7:{title:'Movies – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el género o elemento de película.',
-  words:['comedy','horror','western','action','drama','animation','director','actor','sequel','special effects'],note:'🖼️ El docente agrega imágenes de géneros cinematográficos.'},
-W8:{title:'Comics & Sci-Fi – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el personaje o elemento.',
-  words:['superhero','villain','robot','spaceship','planet','alien','comic','cape','mask','laser'],note:'🖼️ El docente agrega imágenes de cómic y ciencia ficción.'},
-W9:{title:'Cultural Spots – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el lugar cultural.',
-  words:['Teotihuacan','Chichen Itza','Barrio Antiguo','pyramid','ruins','museum','cathedral','market','beach','volcano'],note:'🖼️ El docente agrega imágenes de lugares culturales de México.'},
-W10:{title:'Places Around Town – Imagen y Vocabulario',instruction:'Relaciona cada imagen con el lugar en la ciudad.',
-  words:['pharmacy','post office','hospital','library','cultural center','mall','stadium','bus stop','parking lot','bank'],note:'🖼️ El docente agrega imágenes de lugares en la ciudad.'},
+W1:{title:'Greetings & Commands',instruction:'Relaciona cada imagen con la palabra correcta.',
+  words:['hello','goodbye','stand up','sit down','open your book','listen','write','teacher','student','doctor'],note:'🖼️ El docente agrega imágenes de saludos y comandos del salón.'},
+W2:{title:'Countries & Nationalities',instruction:'Relaciona cada bandera con el país y la nacionalidad.',
+  words:['Mexico','USA','Canada','France','Japan','Spanish','Korean','British','tall','short'],note:'🖼️ El docente agrega banderas e imágenes de personas con descripciones físicas.'},
+W3:{title:'My Classroom',instruction:'Relaciona cada imagen con el objeto o preposición de tiempo.',
+  words:['pencil','pen','ruler','eraser','notebook','desk','on','under','in','next to'],note:'🖼️ El docente agrega imágenes de objetos del salón y su ubicación.'},
+W4:{title:'Food & Drink',instruction:'Relaciona cada imagen con la palabra de comida o bebida.',
+  words:['apple','orange','bread','milk','water','juice','egg','rice','cheese','banana'],note:'🖼️ El docente agrega imágenes de alimentos y bebidas.'},
+W5:{title:'Home & Family',instruction:'Relaciona cada imagen con el cuarto, mueble o familiar.',
+  words:['living room','bedroom','kitchen','bathroom','sofa','table','lamp','brother','sister','parents'],note:'🖼️ El docente agrega imágenes de partes de la casa y familia.'},
+W6:{title:'Daily Routines',instruction:'Relaciona cada imagen con la rutina diaria.',
+  words:['wake up','have breakfast','go to school','have lunch','do homework','have dinner','go to bed','every day','always','never'],note:'🖼️ El docente agrega imágenes de rutinas diarias.'},
+W7:{title:'Personal Objects & Possessives',instruction:'Relaciona cada imagen con el objeto y su poseedor.',
+  words:['phone','bag','keys','wallet','glasses','headphones','watch','my','your','their'],note:'🖼️ El docente agrega imágenes de objetos personales.'},
+W8:{title:'Activities & Frequency',instruction:'Relaciona cada imagen con la actividad y el adverbio de frecuencia.',
+  words:['play sports','read','watch TV','listen to music','exercise','always','usually','sometimes','rarely','never'],note:'🖼️ El docente agrega imágenes de actividades y frecuencia.'},
+W9:{title:'Places in Town',instruction:'Relaciona cada imagen con el lugar en la ciudad.',
+  words:['bank','pharmacy','hospital','library','post office','supermarket','park','cinema','market','bus stop'],note:'🖼️ El docente agrega imágenes de lugares en la ciudad.'},
+W10:{title:'Sports & Exercise',instruction:'Relaciona cada imagen con el deporte o actividad física.',
+  words:['football','basketball','swimming','cycling','running','yoga','tennis','gym','is running','is playing'],note:'🖼️ El docente agrega imágenes de deportes.'},
+W11:{title:'Clothes',instruction:'Relaciona cada imagen con la prenda de ropa.',
+  words:['T-shirt','jacket','dress','trousers','shoes','boots','hat','scarf','glasses','uniform'],note:'🖼️ El docente agrega imágenes de ropa.'},
+W12:{title:'Talents & Skills / Signs',instruction:'Relaciona cada imagen con el talento, habilidad o señal.',
+  words:['play the guitar','sing','dance','draw','swim','can','can\'t','no parking','no smoking','no entry'],note:'🖼️ El docente agrega imágenes de habilidades y señales.'},
+W13:{title:'Past Events (Regular Verbs)',instruction:'Relaciona cada imagen con el verbo en pasado.',
+  words:['stayed','watched','walked','finished','listened','played','posted','enjoyed','yesterday','last week'],note:'🖼️ El docente agrega imágenes de eventos pasados.'},
+W14:{title:'Celebrations & Irregular Past',instruction:'Relaciona cada imagen con el verbo irregular o celebración.',
+  words:['went','made','gave','ate','took','wrote','came','birthday','Christmas','party'],note:'🖼️ El docente agrega imágenes de celebraciones y verbos irregulares.'},
+W15:{title:'Historical Events',instruction:'Relaciona cada imagen con el evento o personaje histórico.',
+  words:['discovered','sank','built','won','fell','lived','ended','pyramid','ancient','invention'],note:'🖼️ El docente agrega imágenes de eventos históricos.'},
+W16:{title:'Weekend Activities / Past Negative',instruction:'Relaciona cada imagen con la actividad o negación en pasado.',
+  words:['did not go','did not play','did not cook','hiking','camping','cycling','achievement','weekend','unfortunately','instead'],note:'🖼️ El docente agrega imágenes de actividades del fin de semana.'},
+W17:{title:'Sports & Personality Traits',instruction:'Relaciona cada imagen con el rasgo de personalidad o deporte.',
+  words:['athlete','champion','coach','brave','creative','friendly','patient','hardworking','yesterday','last year'],note:'🖼️ El docente agrega imágenes de deportistas y rasgos de personalidad.'},
+W18:{title:'Amazing People / to be past',instruction:'Relaciona cada imagen con la persona o verbo to be en pasado.',
+  words:['was','were','painter','scientist','inventor','physicist','talented','famous','brilliant','achievement'],note:'🖼️ El docente agrega imágenes de personajes históricos famosos.'},
 };
 
 // ============================================================
@@ -4149,6 +4365,41 @@ async function renderStudents(){
     myStudents.sort((a,b) => (parseInt(a.listNum)||99) - (parseInt(b.listNum)||99));
   }
 
+  // Agrupar por grupo para mostrar secciones
+  const byGroup = {};
+  myStudents.forEach(s => {
+    const g = s.group || 'Sin grupo';
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(s);
+  });
+
+  const MODULE_MAP = {'1':'Módulo 1','2':'Módulo 2','3':'Módulo 3','4':'Módulo 4'};
+  const getModuleLabel = (group) => {
+    const num = group.replace(/[^0-9]/g,'')[0];
+    return num && MODULE_MAP[num] ? MODULE_MAP[num] : '';
+  };
+
+  const tableRows = Object.entries(byGroup).sort((a,b)=>a[0].localeCompare(b[0])).map(([grp, students])=>`
+    <tr>
+      <td colspan="7" style="background:#f1f5f9;padding:8px 14px;font-size:.75rem;font-weight:800;color:#475569;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid #e2e8f0;">
+        📚 Grupo ${grp} ${getModuleLabel(grp)?'· '+getModuleLabel(grp):''}
+        <span style="font-weight:400;color:#94a3b8;">(${students.length} alumno${students.length!==1?'s':''})</span>
+      </td>
+    </tr>
+    ${students.map(s=>`<tr>
+      <td>${s.listNum||'--'}</td>
+      <td><strong>${s.name}</strong></td>
+      <td><span style="font-family:monospace;font-size:.78rem">${s.username}</span></td>
+      <td><span class="badge badge-blue">${s.group||'--'}</span></td>
+      <td><span class="badge badge-purple">${s.rosterData?.nivel||'A1.2'}</span></td>
+      <td><span class="badge badge-orange">${s.rosterData?.parcial||activeParcial}</span></td>
+      <td>
+        <button class="btn btn-primary btn-xs" onclick="SFX.click();editRosterStudent('${s.uid}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="SFX.click();removeFromRoster('${s.uid}','${s.name.replace(/'/g,"\\'")}')">✖</button>
+      </td>
+    </tr>`).join('')}
+  `).join('');
+
   document.getElementById('content-area').innerHTML=`
   <div class="card">
     <div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:10px;">
@@ -4170,20 +4421,7 @@ async function renderStudents(){
         </div>`
       : `<table>
           <thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Nivel</th><th>Parcial</th><th>Acciones</th></tr></thead>
-          <tbody>
-            ${myStudents.map(s=>`<tr>
-              <td>${s.listNum||'--'}</td>
-              <td><strong>${s.name}</strong></td>
-              <td><span style="font-family:monospace;font-size:.8rem">${s.username}</span></td>
-              <td><span class="badge badge-blue">${s.group||'--'}</span></td>
-              <td><span class="badge badge-purple">${s.rosterData?.nivel||'A1'}</span></td>
-              <td><span class="badge badge-orange">${s.rosterData?.parcial||activeParcial}</span></td>
-              <td>
-                <button class="btn btn-primary btn-xs" onclick="SFX.click();editRosterStudent('${s.uid}')">✏️</button>
-                <button class="btn btn-danger btn-xs" onclick="SFX.click();removeFromRoster('${s.uid}','${s.name.replace(/'/g,"\\'")}')">✖</button>
-              </td>
-            </tr>`).join('')}
-          </tbody>
+          <tbody>${tableRows}</tbody>
         </table>`
     }
   </div>`;
@@ -4195,58 +4433,117 @@ async function openRosterSearch(){
   const teacherUid  = AUTH.currentUser?.uid || 'admin';
   const roster      = await DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()) || {};
 
-  // Solo alumnos de inglés (tienen materias.ingles o email @student.blackai.com)
-  // y que NO estén ya en el roster
-  const available = allStudents ? Object.entries(allStudents)
-    .filter(([uid, s]) => !roster[uid]) // no está ya en mi lista
-    .map(([uid, s]) => ({ uid, ...s }))
-    .sort((a,b) => (a.name||'').localeCompare(b.name||'')) : [];
+  // Separar: ya en el curso vs disponibles
+  const inCourse = [], available = [];
+  if (allStudents) {
+    Object.entries(allStudents).forEach(([uid, s]) => {
+      const obj = { uid, ...s };
+      if (roster[uid]) inCourse.push(obj);
+      else available.push(obj);
+    });
+    const sortFn = (a,b) => (a.name||'').localeCompare(b.name||'');
+    inCourse.sort(sortFn);
+    available.sort(sortFn);
+  }
+
+  // Módulos del libro: Módulo 1 = grupos A, Módulo 2 = B, etc.
+  const MODULE_LABELS = {
+    '1':'Módulo 1 — All about me',
+    '2':'Módulo 2 — My world / My routine',
+    '3':'Módulo 3 — Past & Celebrations',
+    '4':'Módulo 4 — Achievements',
+  };
+
+  const buildStudentRow = (s, isInCourse) => `
+    <div class="roster-item ${isInCourse?'roster-in-course':''}"
+      data-uid="${s.uid}"
+      data-name="${(s.name||'').toLowerCase()}"
+      data-user="${(s.username||'').toLowerCase()}"
+      data-group="${(s.group||'').toLowerCase()}"
+      style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+             border-bottom:1px solid #f3f4f6;cursor:${isInCourse?'default':'pointer'};
+             transition:background .15s;${isInCourse?'opacity:.55;':''}
+             background:${isInCourse?'#f0fdf4':''}"
+      ${isInCourse?'':`onmouseover="this.style.background='#eff6ff'" onmouseout="if(!window._rosterSelected.has('${s.uid}'))this.style.background=''" onclick="toggleRosterSelect('${s.uid}',this)"`}>
+      <div style="width:36px;height:36px;border-radius:50%;
+           background:${isInCourse?'linear-gradient(135deg,#10b981,#059669)':'linear-gradient(135deg,#3b82f6,#6366f1)'};
+           display:flex;align-items:center;justify-content:center;
+           color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0;">
+        ${(s.name||'?')[0].toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:.88rem;color:#111;">${s.name||'Sin nombre'}</div>
+        <div style="font-size:.75rem;color:#6b7280;">
+          ${s.username||''}@student.blackai.com
+          ${s.group?`· <span style="color:#3b82f6;font-weight:600;">Grupo ${s.group}</span>`:''}
+          ${isInCourse?'<span style="color:#059669;font-weight:700;margin-left:4px;">✓ En tu curso</span>':''}
+        </div>
+      </div>
+      ${isInCourse
+        ? '<span style="font-size:.7rem;background:#dcfce7;color:#059669;padding:2px 8px;border-radius:99px;font-weight:700;">Agregado</span>'
+        : `<div id="check-${s.uid}" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;transition:all .2s;"></div>`
+      }
+    </div>`;
+
+  // Agrupar disponibles por grupo (Módulo)
+  const byGroup = {};
+  available.forEach(s => {
+    const g = s.group || 'Sin grupo';
+    if (!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push(s);
+  });
+
+  const groupedHTML = Object.entries(byGroup).sort((a,b)=>a[0].localeCompare(b[0])).map(([grp, students])=>`
+    <div class="roster-group-header" data-group="${grp.toLowerCase()}"
+      style="padding:6px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;
+             font-size:.72rem;font-weight:800;color:#6b7280;letter-spacing:.05em;
+             text-transform:uppercase;position:sticky;top:0;z-index:1;">
+      📚 Grupo ${grp}
+    </div>
+    ${students.map(s=>buildStudentRow(s,false)).join('')}
+  `).join('');
+
+  const inCourseHTML = inCourse.length > 0 ? `
+    <div style="padding:6px 14px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;
+         font-size:.72rem;font-weight:800;color:#059669;letter-spacing:.05em;text-transform:uppercase;">
+      ✅ Ya en tu curso (${inCourse.length})
+    </div>
+    ${inCourse.map(s=>buildStudentRow(s,true)).join('')}
+  ` : '';
 
   openModal('🔍 Agregar alumno al curso',`
-    <div style="margin-bottom:12px;">
-      <input id="roster-search" placeholder="🔍 Buscar por nombre o usuario..."
-        style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.9rem;box-sizing:border-box;"
+    <div style="margin-bottom:10px;">
+      <input id="roster-search" placeholder="🔍 Buscar por nombre, usuario o grupo..."
+        style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;
+               font-size:.88rem;box-sizing:border-box;outline:none;"
         oninput="filterRosterList(this.value)">
     </div>
-    <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
-      <select id="roster-nivel" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
-        <option value="A1">Nivel A1</option>
-        <option value="A1.2">Nivel A1.2</option>
-        <option value="A2">Nivel A2</option>
-        <option value="B1">Nivel B1</option>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <select id="roster-nivel" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.82rem;min-width:120px;">
+        <option value="A1">📗 Nivel A1</option>
+        <option value="A1.2" selected>📘 Nivel A1.2</option>
+        <option value="A2">📙 Nivel A2</option>
+        <option value="B1">📕 Nivel B1</option>
       </select>
-      <select id="roster-parcial" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
+      <select id="roster-parcial" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.82rem;min-width:120px;">
         <option value="p1" ${activeParcial==='p1'?'selected':''}>1er Parcial</option>
         <option value="p2" ${activeParcial==='p2'?'selected':''}>2do Parcial</option>
         <option value="p3" ${activeParcial==='p3'?'selected':''}>Final</option>
       </select>
     </div>
-    <div id="roster-list" style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
-      ${available.length===0
-        ? '<div style="padding:20px;text-align:center;color:#9ca3af;">No hay alumnos disponibles para agregar</div>'
-        : available.map(s=>`
-          <div class="roster-item" data-uid="${s.uid}" data-name="${(s.name||'').toLowerCase()}" data-user="${(s.username||'').toLowerCase()}"
-            style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;"
-            onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''"
-            onclick="toggleRosterSelect('${s.uid}',this)">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0;">
-              ${(s.name||'?')[0].toUpperCase()}
-            </div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-weight:700;font-size:.9rem;color:#111;">${s.name||'Sin nombre'}</div>
-              <div style="font-size:.78rem;color:#6b7280;">${s.username||''}@student.blackai.com · Grupo: ${s.group||'--'}</div>
-            </div>
-            <div id="check-${s.uid}" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;transition:all .2s;"></div>
-          </div>`).join('')
+    <div id="roster-list" style="max-height:310px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
+      ${available.length===0 && inCourse.length===0
+        ? '<div style="padding:24px;text-align:center;color:#9ca3af;">No hay alumnos registrados en el sistema</div>'
+        : groupedHTML + inCourseHTML
       }
     </div>
-    <div id="roster-selected-count" style="margin-top:8px;font-size:.8rem;color:#6b7280;text-align:center;">
-      Ningún alumno seleccionado
+    <div id="roster-selected-count" style="margin-top:8px;font-size:.8rem;color:#6b7280;text-align:center;min-height:18px;">
+      ${available.length===0?'Todos los alumnos ya están en tu curso':'Ningún alumno seleccionado'}
     </div>
-    <div style="margin-top:12px;padding:10px 14px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd;">
-      <p style="font-size:.78rem;color:#0369a1;margin:0;">
-        💡 ¿No encuentras al alumno? Regístralo primero en
-        <a href="https://new-student.pages.dev" target="_blank" style="color:#0284c7;font-weight:700;">new-student.pages.dev</a>
+    <div style="margin-top:10px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;">
+      <p style="font-size:.75rem;color:#1d4ed8;margin:0;">
+        💡 ¿No encuentras al alumno?
+        <a href="https://new-student.pages.dev" target="_blank" style="color:#1d4ed8;font-weight:700;text-decoration:underline;">Regístralo en el gestor de alumnos →</a>
       </p>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -4278,10 +4575,20 @@ function toggleRosterSelect(uid, el){
 
 function filterRosterList(q){
   q = q.toLowerCase().trim();
+  // Hide/show items
   document.querySelectorAll('.roster-item').forEach(el=>{
-    const name = el.dataset.name||'';
-    const user = el.dataset.user||'';
-    el.style.display = (!q||name.includes(q)||user.includes(q)) ? '' : 'none';
+    const name  = el.dataset.name||'';
+    const user  = el.dataset.user||'';
+    const group = el.dataset.group||'';
+    const show  = !q || name.includes(q) || user.includes(q) || group.includes(q);
+    el.style.display = show ? '' : 'none';
+  });
+  // Hide group headers if all items in group are hidden
+  document.querySelectorAll('.roster-group-header').forEach(header=>{
+    const grp = header.dataset.group;
+    const groupItems = document.querySelectorAll(`.roster-item[data-group="${grp}"]`);
+    const anyVisible = [...groupItems].some(el=>el.style.display!=='none');
+    header.style.display = anyVisible ? '' : 'none';
   });
 }
 
