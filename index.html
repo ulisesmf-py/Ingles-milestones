@@ -4130,15 +4130,17 @@ async function setActiveParcial(p){
 // ADMIN: STUDENTS
 // ============================================================
 async function renderStudents(){
-  const students=await dbGet('students');
+  const students = await DB.ref('students').once('value').then(s=>s.val());
+  document.getElementById('page-title').textContent='👥 Alumnos';
+  setActiveNav('students');
   document.getElementById('content-area').innerHTML=`
   <div class="card">
     <div class="flex justify-between items-center mb-4">
       <h3 class="section-title mb-0">👥 Alumnos (${students?Object.keys(students).length:0})</h3>
       <button class="btn btn-primary" onclick="SFX.click();openAddStudent()">➕ Agregar Alumno</button>
     </div>
-    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos</p></div>':
-    `<table><thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Acciones</th></tr></thead><tbody>`+
+    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos</p></div>':`
+    <table><thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Acciones</th></tr></thead><tbody>`+
     Object.entries(students).map(([id,s])=>`<tr>
       <td>${s.listNum||'--'}</td><td><strong>${s.name}</strong></td>
       <td>${s.username}</td>
@@ -4417,10 +4419,46 @@ async function saveAttendance(date){
 // ADMIN: GRADES
 // ============================================================
 async function renderGrades(){
-  const [students,grades]=await Promise.all([dbGet('students'),dbGet('grades')]);
-  if(!students){document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">📝</div><p>No hay alumnos</p></div></div>';return;}
-  const parcialLabel=activeParcial==='p1'?'1er Parcial':activeParcial==='p2'?'2do Parcial':'Final';
-
+  document.getElementById('page-title').textContent='📝 Calificaciones';
+  setActiveNav('grades');
+  // Leer desde raíz /students y /grades
+  const [students, grades] = await Promise.all([
+    DB.ref('students').once('value').then(s=>s.val()),
+    DB.ref('grades').once('value').then(s=>s.val())
+  ]);
+  if(!students){
+    document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">📝</div><p>No hay alumnos registrados</p></div></div>';
+    return;
+  }
+  const parcialLabel = activeParcial==='p1'?'1er Parcial':activeParcial==='p2'?'2do Parcial':'Final';
+  const rows = await Promise.all(Object.entries(students).map(async([id,s])=>{
+    const g = (grades&&grades[id]&&grades[id][activeParcial]) || {};
+    // Progreso del alumno en la app
+    const prog = await DB.ref('milestone/progress/'+id).once('value').then(r=>r.val());
+    const totalDone = prog ? Object.values(prog).reduce((a,t)=>a+Object.keys(t).length,0) : 0;
+    const totalPossible = TOPICS.length * ACT_TYPES.length;
+    const progPct = totalPossible>0 ? Math.round((totalDone/totalPossible)*100) : 0;
+    const avg = g.avg || '--';
+    const avgNum = parseFloat(avg)||0;
+    const color = avgNum>=8?'badge-green':avgNum>=6?'badge-orange':'badge-red';
+    return `<tr>
+      <td><strong>${s.name}</strong></td>
+      <td><span class="badge badge-blue">${s.group||'--'}</span></td>
+      <td>${g.activities||'--'}</td>
+      <td>${g.attendance||'--'}</td>
+      <td>${g.exam||'--'}</td>
+      <td><span class="badge ${color}">${avg}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden;min-width:55px">
+            <div style="height:100%;width:${progPct}%;background:var(--blue);border-radius:4px"></div>
+          </div>
+          <span class="text-xs">${progPct}%</span>
+        </div>
+      </td>
+      <td><button class="btn btn-primary btn-xs" onclick="SFX.click();editGrade('${id}','${s.name.replace(/'/g,"\\'")}')">✏️</button></td>
+    </tr>`;
+  }));
   document.getElementById('content-area').innerHTML=`
   <div class="card">
     <div class="flex justify-between items-center mb-4">
@@ -4431,78 +4469,54 @@ async function renderGrades(){
     </div>
     <table>
       <thead><tr><th>Alumno</th><th>Grupo</th><th>Actividades</th><th>Asistencia</th><th>Examen</th><th>Promedio</th><th>Progreso App</th><th>Acciones</th></tr></thead>
-      <tbody>
-        ${await Promise.all(Object.entries(students).map(async([id,s])=>{
-          const g=(grades&&grades[id]&&grades[id][activeParcial])||{};
-          const rubricGrade=await calcFinalGradeWithRubric(id,activeParcial);
-          const prog=await dbGet('progress/'+id);
-          const totalDone=prog?Object.values(prog).reduce((a,t)=>a+Object.keys(t).length,0):0;
-          const totalPossible=TOPICS.length*ACT_TYPES.length;
-          const progPct=Math.round((totalDone/totalPossible)*100);
-          const avg=g.avg||'--';
-          const avgNum=parseFloat(avg)||0;
-          const color=avgNum>=8?'badge-green':avgNum>=6?'badge-orange':'badge-red';
-          return `<tr>
-            <td><strong>${s.name}</strong></td>
-            <td><span class="badge badge-blue">${s.group||'--'}</span></td>
-            <td>${g.activities||'--'}</td>
-            <td>${g.attendance||'--'}</td>
-            <td>${g.exam||'--'}</td>
-            <td><span class="badge ${color} grade-avg">${avg}</span></td>
-            <td><div style="display:flex;align-items:center;gap:8px;">
-              <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;min-width:60px">
-                <div style="height:100%;width:${progPct}%;background:var(--blue);border-radius:4px"></div>
-              </div>
-              <span class="text-xs">${progPct}%</span>
-            </div></td>
-            <td><button class="btn btn-primary btn-xs" onclick="SFX.click();editGrade('${id}','${s.name.replace(/'/g,"\\'")}')">✏️</button></td>
-          </tr>`;
-        })).then(rows=>rows.join(''))}
-      </tbody>
+      <tbody>${rows.join('')}</tbody>
     </table>
   </div>`;
 }
 
-async function editGrade(studentId,name){
-  const g=(await dbGet('grades/'+studentId+'/'+activeParcial))||{};
+async function editGrade(studentId, name){
+  const g = (await DB.ref('grades/'+studentId+'/'+activeParcial).once('value').then(s=>s.val())) || {};
   openModal('📝 Calificaciones – '+name,`
     <p class="text-sm text-gray mb-3">Parcial: <strong>${activeParcial==='p1'?'1er':activeParcial==='p2'?'2do':'Final'}</strong></p>
     <div class="form-group"><label>Actividades (0-10)</label><input type="number" id="g-act" min="0" max="10" step="0.1" value="${g.activities||''}"></div>
     <div class="form-group"><label>Asistencia (0-10)</label><input type="number" id="g-att" min="0" max="10" step="0.1" value="${g.attendance||''}"></div>
     <div class="form-group"><label>Examen (0-10)</label><input type="number" id="g-exam" min="0" max="10" step="0.1" value="${g.exam||''}"></div>
-    <div id="g-preview" class="mt-3 p-3 rounded fw-bold" style="background:var(--blue-light)">Promedio: --</div>`,
+    <div id="g-preview" class="mt-3 p-3 rounded fw-bold" style="background:var(--blue-light)">Promedio: ${g.avg||'--'}</div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-primary" onclick="saveGrade('${studentId}')">Guardar ✅</button>`
   );
-  ['g-act','g-att','g-exam'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener('input',()=>{
+  ['g-act','g-att','g-exam'].forEach(fid=>{
+    const el=document.getElementById(fid);
+    if(el) el.addEventListener('input',()=>{
       const a=parseFloat(document.getElementById('g-act').value)||0;
       const b=parseFloat(document.getElementById('g-att').value)||0;
-      const c2=parseFloat(document.getElementById('g-exam').value)||0;
-      document.getElementById('g-preview').textContent='Promedio: '+((a+b+c2)/3).toFixed(1);
+      const c=parseFloat(document.getElementById('g-exam').value)||0;
+      document.getElementById('g-preview').textContent='Promedio: '+((a+b+c)/3).toFixed(1);
     });
   });
 }
 
 async function saveGrade(studentId){
-  const act=document.getElementById('g-act').value;
-  const att=document.getElementById('g-att').value;
-  const exam=document.getElementById('g-exam').value;
-  const realAvg=(((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0))/3).toFixed(1);
-  await dbSet('grades/'+studentId+'/'+activeParcial,{activities:act,attendance:att,exam,avg:realAvg});
-  // Sincronizar al portal /grades/{uid}/inglés/
+  const act  = document.getElementById('g-act').value;
+  const att  = document.getElementById('g-att').value;
+  const exam = document.getElementById('g-exam').value;
+  const avg  = (((parseFloat(act)||0)+(parseFloat(att)||0)+(parseFloat(exam)||0))/3).toFixed(1);
+
+  // Guardar en /grades/{uid}/{parcial} — raíz (compatible con gestor de alumnos)
+  await DB.ref('grades/'+studentId+'/'+activeParcial).set({
+    activities: act, attendance: att, exam, avg,
+    updatedAt: Date.now()
+  });
+
+  // Sincronizar estructura completa al portal /grades/{uid}/ingles
   try {
-    const students = await DB.ref('students').once('value').then(s=>s.val());
-    if (students && students[studentId]) {
-      // Simular currentUser temporalmente para el sync
-      const _prev = currentUser;
-      currentUser = { ...students[studentId], id: studentId };
-      await syncGradesToPortal(studentId);
-      currentUser = _prev;
-    }
-  } catch(e) { console.warn('Portal sync (manual):', e); }
-  SFX.success();toast('Calificación guardada ✅','success');closeModal();renderGrades();
+    await syncGradesToPortal(studentId);
+  } catch(e){ console.warn('Portal sync:', e); }
+
+  SFX.success();
+  toast('Calificación guardada ✅','success');
+  closeModal();
+  renderGrades();
 }
 
 // ============================================================
@@ -6958,65 +6972,50 @@ async function saveProgressAndGrade(topicId, moduleType, score, total, pct) {
 async function syncGradesToPortal(uid) {
   if (!uid) return;
 
-  // Leer calificaciones actuales del alumno
-  const [gradesData, progressData, activitiesData] = await Promise.all([
-    DB.ref('milestone/grades/' + uid).once('value').then(s => s.val()),
-    DB.ref('milestone/progress/' + uid).once('value').then(s => s.val()),
-    DB.ref('milestone/activities').once('value').then(s => s.val())
+  // Leer calificaciones desde la raíz /grades (donde saveGrade escribe)
+  const [gradesData, progressData] = await Promise.all([
+    DB.ref('grades/' + uid).once('value').then(s => s.val()),
+    DB.ref('milestone/progress/' + uid).once('value').then(s => s.val())
   ]);
 
-  // Calcular promedio de progreso por parcial
+  // Construir estructura por parcial
   const parciales = { p1: null, p2: null, p3: null };
-
-  ['p1', 'p2', 'p3'].forEach(parcial => {
+  ['p1','p2','p3'].forEach(parcial => {
     const g = gradesData?.[parcial];
     if (!g) return;
-
-    // Promedio de actividades del parcial
-    let actSum = 0, actCount = 0;
-    if (progressData && activitiesData) {
-      Object.values(activitiesData).forEach(act => {
-        if (act.parcial !== parcial || act.active === false) return;
-        // Buscar progreso de este tema en el alumno
-        const topicProgress = progressData[act.topicId || act.id];
-        if (topicProgress) {
-          const vals = Object.values(topicProgress).map(m => m.pct || 0);
-          if (vals.length) { actSum += vals.reduce((a,b) => a+b, 0) / vals.length; actCount++; }
-        }
-      });
-    }
-
-    const actAvg    = actCount > 0 ? Math.round(actSum / actCount) : (g.activities || 0);
-    const attendance = g.attendance || 0;
-    const exam      = g.exam || 0;
-
+    const act  = parseFloat(g.activities) || 0;
+    const att  = parseFloat(g.attendance) || 0;
+    const exam = parseFloat(g.exam) || 0;
     // Fórmula: 40% actividades + 20% asistencia + 40% examen
-    const final = Math.round(actAvg * 0.4 + attendance * 0.2 + exam * 0.4);
-
+    const final = Math.round(act * 0.4 + att * 0.2 + exam * 0.4);
     parciales[parcial] = {
-      actividades: actAvg,
-      asistencia:  attendance,
-      examen:      exam,
-      final:       final,
+      actividades: act, asistencia: att, examen: exam,
+      final, avg: g.avg || '--',
       actualizado: Date.now()
     };
   });
 
-  // Calcular promedio general de los parciales con calificación
-  const vals = Object.values(parciales).filter(v => v !== null).map(v => v.final);
-  const promedioGeneral = vals.length ? Math.round(vals.reduce((a,b) => a+b,0) / vals.length) : null;
+  // Promedio general
+  const vals = Object.values(parciales).filter(v=>v!==null).map(v=>v.final);
+  const promedioGeneral = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
 
-  // Escribir en /grades/{uid}/inglés/
+  // Nombre del alumno
+  const studentData = await DB.ref('students/'+uid).once('value').then(s=>s.val());
+  const nombre = studentData?.name || currentUser?.name || '';
+
   const portalPayload = {
-    materia:   'inglés',
+    materia: 'ingles',
     parciales,
-    promedio:  promedioGeneral,
-    uid,
-    nombre:    currentUser.name || '',
+    promedio: promedioGeneral,
+    uid, nombre,
     actualizado: Date.now()
   };
 
-  await DB.ref('grades/' + uid + '/inglés').set(portalPayload);
+  // Escribir en ambas variantes para compatibilidad con el gestor
+  await Promise.all([
+    DB.ref('grades/' + uid + '/ingles').set(portalPayload),
+    DB.ref('grades/' + uid + '/inglés').set({...portalPayload, materia:'inglés'})
+  ]);
 }
 
 // ============================================================
@@ -7059,84 +7058,6 @@ async function syncGradesToPortal(uid) {
 // ============================================================
 // ADMIN: GRADES — Updated with rubric-weighted display and parcial tabs
 // ============================================================
-async function renderGrades() {
-  const [students, grades, rubric, activities] = await Promise.all([
-    dbGet('students'), dbGet('grades'), dbGet('rubric'), dbGet('activities')
-  ]);
-  if (!students) {
-    document.getElementById('content-area').innerHTML =
-      '<div class="card"><div class="empty-state"><div class="es-icon">📝</div><p>No hay alumnos</p></div></div>';
-    return;
-  }
-  const parcialLabel = activeParcial === 'p1' ? '1er Parcial' : activeParcial === 'p2' ? '2do Parcial' : 'Final';
-
-  // Rubric info
-  const rubricItems = rubric?.items || [];
-  const hasRubric = rubricItems.length > 0;
-
-  // Count active activities per parcial
-  const actsPerParcial = { p1: 0, p2: 0, p3: 0 };
-  if (activities) {
-    Object.values(activities).forEach(a => {
-      if (a.active !== false && a.parcial) actsPerParcial[a.parcial] = (actsPerParcial[a.parcial] || 0) + 1;
-    });
-  }
-
-  const stEntries = Object.entries(students);
-
-  // Build rows with rubric-weighted grades
-  const rows = await Promise.all(stEntries.map(async ([id, s]) => {
-    const g = (grades && grades[id] && grades[id][activeParcial]) || {};
-    const rubricGrade = hasRubric ? await calcFinalGradeWithRubric(id, activeParcial) : null;
-    const displayAvg = rubricGrade !== null ? rubricGrade.toFixed(1) : (g.avg || '--');
-    const avgNum = parseFloat(displayAvg) || 0;
-    const color = avgNum >= 8 ? 'badge-green' : avgNum >= 6 ? 'badge-orange' : 'badge-red';
-
-    return `<tr>
-      <td><strong>${s.name}</strong></td>
-      <td><span class="badge badge-blue">${s.group || '--'}</span></td>
-      <td>${g.activities || '--'}</td>
-      <td>${g.attendance || '--'}</td>
-      <td>${g.exam || '--'}</td>
-      <td><span class="badge ${color} grade-avg">${displayAvg}${rubricGrade !== null ? ' <span style="font-size:.6rem;opacity:.7">📏</span>' : ''}</span></td>
-      <td><button class="btn btn-primary btn-xs" onclick="SFX.click();editGrade('${id}','${s.name.replace(/'/g, "\\'")}')">✏️</button></td>
-    </tr>`;
-  }));
-
-  // Rubric summary for current parcial
-  const rubricSummary = hasRubric ? `
-    <div class="card mb-3" style="border-left:4px solid var(--purple);background:var(--purple-l);padding:14px 18px">
-      <div class="flex justify-between items-center flex-wrap gap-2">
-        <span class="fw-bold text-sm">📏 Ponderación de Rúbrica activa:</span>
-        <div class="flex flex-wrap gap-2">
-          ${rubricItems.map(it => `<span class="badge badge-purple">${it.name}: ${it.pct}%</span>`).join('')}
-        </div>
-      </div>
-      <p class="text-xs text-gray mt-1">Actividades en este parcial: <strong>${actsPerParcial[activeParcial] || 0}</strong> activas · El promedio 📏 se calcula usando la rúbrica.</p>
-    </div>` : '';
-
-  document.getElementById('content-area').innerHTML = `
-  ${rubricSummary}
-  <div class="card">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="section-title mb-0">📝 Calificaciones – ${parcialLabel}</h3>
-      <div class="parcial-tabs">
-        ${['p1', 'p2', 'p3'].map(p =>
-          `<button class="parcial-tab${activeParcial === p ? ' active' : ''}" onclick="SFX.click();activeParcial='${p}';renderGrades()">
-            ${p === 'p1' ? '1er' : p === 'p2' ? '2do' : 'Final'}
-          </button>`
-        ).join('')}
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Alumno</th><th>Grupo</th><th>Actividades</th><th>Asistencia</th><th>Examen</th><th>Promedio</th><th>Acción</th></tr></thead>
-      <tbody>${rows.join('')}</tbody>
-    </table>
-  </div>`;
-}
-
-// ============================================================
-// ADMIN: RUBRIC — improved with parcial selector + activity count preview
 // ============================================================
 
 
