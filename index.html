@@ -4130,92 +4130,241 @@ async function setActiveParcial(p){
 // ADMIN: STUDENTS
 // ============================================================
 async function renderStudents(){
-  const students = await DB.ref('students').once('value').then(s=>s.val());
-  document.getElementById('page-title').textContent='👥 Alumnos';
+  document.getElementById('page-title').textContent='👥 Mi Lista de Alumnos';
   setActiveNav('students');
+
+  // El roster es independiente por maestro: /milestone/roster/{teacherUid}/
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const [roster, allStudents] = await Promise.all([
+    DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()),
+    DB.ref('students').once('value').then(s=>s.val())
+  ]);
+
+  // Construir lista de alumnos del maestro con datos completos
+  const myStudents = [];
+  if (roster && allStudents) {
+    Object.keys(roster).forEach(uid => {
+      if (allStudents[uid]) myStudents.push({ uid, ...allStudents[uid], rosterData: roster[uid] });
+    });
+    myStudents.sort((a,b) => (parseInt(a.listNum)||99) - (parseInt(b.listNum)||99));
+  }
+
   document.getElementById('content-area').innerHTML=`
   <div class="card">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="section-title mb-0">👥 Alumnos (${students?Object.keys(students).length:0})</h3>
-      <button class="btn btn-primary" onclick="SFX.click();openAddStudent()">➕ Agregar Alumno</button>
+    <div class="flex justify-between items-center mb-4" style="flex-wrap:wrap;gap:10px;">
+      <h3 class="section-title mb-0">👥 Mi Lista — ${myStudents.length} alumno${myStudents.length!==1?'s':''}</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="SFX.click();openRosterSearch()">🔍 Agregar al curso</button>
+        <button class="btn btn-secondary" onclick="SFX.click();window.open('https://new-student.pages.dev','_blank')">➕ Alumno nuevo</button>
+      </div>
     </div>
-    ${!students?'<div class="empty-state"><div class="es-icon">👤</div><p>No hay alumnos</p></div>':`
-    <table><thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Acciones</th></tr></thead><tbody>`+
-    Object.entries(students).map(([id,s])=>`<tr>
-      <td>${s.listNum||'--'}</td><td><strong>${s.name}</strong></td>
-      <td>${s.username}</td>
-      <td><span class="badge badge-blue">${s.group||'--'}</span></td>
-      <td>
-        <button class="btn btn-primary btn-xs" onclick="SFX.click();editStudent('${id}')">✏️</button>
-        <button class="btn btn-danger btn-xs" onclick="SFX.click();deleteStudent('${id}','${s.name.replace(/'/g,"\\'")}')">🗑️</button>
-      </td>
-    </tr>`).join('')+`</tbody></table>`}
+    ${myStudents.length===0
+      ? `<div class="empty-state">
+          <div class="es-icon">👥</div>
+          <p>No tienes alumnos en tu lista todavía</p>
+          <p class="text-sm text-gray mt-2">Usa "Agregar al curso" para buscar alumnos ya registrados<br>o "Alumno nuevo" para registrar uno desde cero.</p>
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">
+            <button class="btn btn-primary" onclick="openRosterSearch()">🔍 Agregar al curso</button>
+            <button class="btn btn-secondary" onclick="window.open('https://new-student.pages.dev','_blank')">➕ Alumno nuevo</button>
+          </div>
+        </div>`
+      : `<table>
+          <thead><tr><th>No.</th><th>Nombre</th><th>Usuario</th><th>Grupo</th><th>Nivel</th><th>Parcial</th><th>Acciones</th></tr></thead>
+          <tbody>
+            ${myStudents.map(s=>`<tr>
+              <td>${s.listNum||'--'}</td>
+              <td><strong>${s.name}</strong></td>
+              <td><span style="font-family:monospace;font-size:.8rem">${s.username}</span></td>
+              <td><span class="badge badge-blue">${s.group||'--'}</span></td>
+              <td><span class="badge badge-purple">${s.rosterData?.nivel||'A1'}</span></td>
+              <td><span class="badge badge-orange">${s.rosterData?.parcial||activeParcial}</span></td>
+              <td>
+                <button class="btn btn-primary btn-xs" onclick="SFX.click();editRosterStudent('${s.uid}')">✏️</button>
+                <button class="btn btn-danger btn-xs" onclick="SFX.click();removeFromRoster('${s.uid}','${s.name.replace(/'/g,"\\'")}')">✖</button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`
+    }
   </div>`;
 }
 
-function openAddStudent(){
-  openModal('➕ Agregar Alumno',`
-    <div class="form-group"><label>Nombre completo *</label><input id="st-name" placeholder="Ej: María García"></div>
-    <div class="form-group"><label>Usuario *</label><input id="st-user" placeholder="usuario123"></div>
-    <div class="form-group"><label>Contraseña *</label><input id="st-pass" type="password" placeholder="contraseña"></div>
-    <div class="form-group"><label>Email</label><input id="st-email" type="email" placeholder="correo@ejemplo.com"></div>
-    <div class="grid-2">
-      <div class="form-group"><label>Grupo</label><input id="st-group" placeholder="Ej: 2A"></div>
-      <div class="form-group"><label>No. Lista</label><input id="st-num" type="number" placeholder="1"></div>
+// ── Buscador de alumnos para agregar al roster ──────────────
+async function openRosterSearch(){
+  const allStudents = await DB.ref('students').once('value').then(s=>s.val());
+  const teacherUid  = AUTH.currentUser?.uid || 'admin';
+  const roster      = await DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()) || {};
+
+  // Solo alumnos de inglés (tienen materias.ingles o email @student.blackai.com)
+  // y que NO estén ya en el roster
+  const available = allStudents ? Object.entries(allStudents)
+    .filter(([uid, s]) => !roster[uid]) // no está ya en mi lista
+    .map(([uid, s]) => ({ uid, ...s }))
+    .sort((a,b) => (a.name||'').localeCompare(b.name||'')) : [];
+
+  openModal('🔍 Agregar alumno al curso',`
+    <div style="margin-bottom:12px;">
+      <input id="roster-search" placeholder="🔍 Buscar por nombre o usuario..."
+        style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.9rem;box-sizing:border-box;"
+        oninput="filterRosterList(this.value)">
+    </div>
+    <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <select id="roster-nivel" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
+        <option value="A1">Nivel A1</option>
+        <option value="A1.2">Nivel A1.2</option>
+        <option value="A2">Nivel A2</option>
+        <option value="B1">Nivel B1</option>
+      </select>
+      <select id="roster-parcial" style="flex:1;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.85rem;">
+        <option value="p1" ${activeParcial==='p1'?'selected':''}>1er Parcial</option>
+        <option value="p2" ${activeParcial==='p2'?'selected':''}>2do Parcial</option>
+        <option value="p3" ${activeParcial==='p3'?'selected':''}>Final</option>
+      </select>
+    </div>
+    <div id="roster-list" style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;">
+      ${available.length===0
+        ? '<div style="padding:20px;text-align:center;color:#9ca3af;">No hay alumnos disponibles para agregar</div>'
+        : available.map(s=>`
+          <div class="roster-item" data-uid="${s.uid}" data-name="${(s.name||'').toLowerCase()}" data-user="${(s.username||'').toLowerCase()}"
+            style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;"
+            onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''"
+            onclick="toggleRosterSelect('${s.uid}',this)">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0;">
+              ${(s.name||'?')[0].toUpperCase()}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:.9rem;color:#111;">${s.name||'Sin nombre'}</div>
+              <div style="font-size:.78rem;color:#6b7280;">${s.username||''}@student.blackai.com · Grupo: ${s.group||'--'}</div>
+            </div>
+            <div id="check-${s.uid}" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;transition:all .2s;"></div>
+          </div>`).join('')
+      }
+    </div>
+    <div id="roster-selected-count" style="margin-top:8px;font-size:.8rem;color:#6b7280;text-align:center;">
+      Ningún alumno seleccionado
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd;">
+      <p style="font-size:.78rem;color:#0369a1;margin:0;">
+        💡 ¿No encuentras al alumno? Regístralo primero en
+        <a href="https://new-student.pages.dev" target="_blank" style="color:#0284c7;font-weight:700;">new-student.pages.dev</a>
+      </p>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="saveStudent()">Guardar ✅</button>`
+     <button class="btn btn-primary" onclick="addSelectedToRoster()">Agregar al curso ✅</button>`
+  );
+  window._rosterSelected = new Set();
+}
+
+let _rosterSelected = new Set();
+
+function toggleRosterSelect(uid, el){
+  if(_rosterSelected.has(uid)){
+    _rosterSelected.delete(uid);
+    el.style.background='';
+    document.getElementById('check-'+uid).style.background='';
+    document.getElementById('check-'+uid).style.borderColor='#d1d5db';
+  } else {
+    _rosterSelected.add(uid);
+    el.style.background='#eff6ff';
+    const ck = document.getElementById('check-'+uid);
+    ck.style.background='#3b82f6';
+    ck.style.borderColor='#3b82f6';
+    ck.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  const n = _rosterSelected.size;
+  document.getElementById('roster-selected-count').textContent =
+    n===0 ? 'Ningún alumno seleccionado' : `${n} alumno${n!==1?'s':''} seleccionado${n!==1?'s':''}`;
+}
+
+function filterRosterList(q){
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.roster-item').forEach(el=>{
+    const name = el.dataset.name||'';
+    const user = el.dataset.user||'';
+    el.style.display = (!q||name.includes(q)||user.includes(q)) ? '' : 'none';
+  });
+}
+
+async function addSelectedToRoster(){
+  if(_rosterSelected.size===0){ toast('Selecciona al menos un alumno','error'); return; }
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const nivel   = document.getElementById('roster-nivel')?.value  || 'A1';
+  const parcial = document.getElementById('roster-parcial')?.value || activeParcial;
+  const updates = {};
+  _rosterSelected.forEach(uid=>{
+    updates['milestone/roster/'+teacherUid+'/'+uid] = {
+      addedAt: Date.now(), nivel, parcial, addedBy: currentUser.username
+    };
+  });
+  await DB.ref().update(updates);
+  SFX.success();
+  toast(`${_rosterSelected.size} alumno(s) agregado(s) al curso ✅`,'success');
+  _rosterSelected = new Set();
+  closeModal();
+  renderStudents();
+}
+
+async function removeFromRoster(uid, name){
+  if(!confirm(`¿Quitar a ${name} de tu lista? (No se elimina su cuenta)`)) return;
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  await DB.ref('milestone/roster/'+teacherUid+'/'+uid).remove();
+  toast(`${name} quitado del curso`,'success');
+  renderStudents();
+}
+
+async function editRosterStudent(uid){
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const [s, rdata] = await Promise.all([
+    DB.ref('students/'+uid).once('value').then(r=>r.val()),
+    DB.ref('milestone/roster/'+teacherUid+'/'+uid).once('value').then(r=>r.val())
+  ]);
+  if(!s) return;
+  openModal('✏️ '+s.name,`
+    <p class="text-sm text-gray mb-3">Ajusta el nivel y parcial para este alumno en tu curso.</p>
+    <div class="form-group"><label>Nivel</label>
+      <select id="re-nivel">
+        ${['A1','A1.2','A2','B1'].map(v=>`<option value="${v}" ${(rdata?.nivel||'A1')===v?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>Parcial</label>
+      <select id="re-parcial">
+        <option value="p1" ${(rdata?.parcial||'p1')==='p1'?'selected':''}>1er Parcial</option>
+        <option value="p2" ${(rdata?.parcial||'p1')==='p2'?'selected':''}>2do Parcial</option>
+        <option value="p3" ${(rdata?.parcial||'p1')==='p3'?'selected':''}>Final</option>
+      </select>
+    </div>
+    <div class="form-group"><label>No. de lista</label>
+      <input id="re-num" type="number" value="${s.listNum||''}" placeholder="1">
+    </div>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="saveRosterEdit('${uid}')">Guardar ✅</button>`
   );
 }
 
-async function saveStudent(editId=null){
-  const name=document.getElementById('st-name').value.trim();
-  const username=document.getElementById('st-user').value.trim();
-  const password=document.getElementById('st-pass').value.trim();
-  const email=document.getElementById('st-email').value.trim();
-  const group=document.getElementById('st-group').value.trim();
-  const listNum=document.getElementById('st-num').value.trim();
-  if(!name||!username||(!editId&&!password)){toast('Completa los campos requeridos','error');return;}
-  try{
-    let authUid=editId;
-    if(!editId){
-      toast('Creando cuenta...','info');
-      const resp=await fetch(WORKER_URL,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-        body:JSON.stringify({action:'create',email:username+'@student.blackai.com',password,displayName:name}),
-      });
-      const result=await resp.json();
-      if(!result.ok)throw new Error(result.error||'Error al crear usuario');
-      authUid=result.uid;
-    }
-    if(editId&&password){
-      const resp=await fetch(WORKER_URL,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-        body:JSON.stringify({action:'updatePassword',uid:editId,newPassword:password}),
-      });
-      const result=await resp.json();
-      if(!result.ok)throw new Error(result.error);
-    }
-    const data={name,username,email,group,listNum,role:'student',authUid};
-    if(editId){await dbUpdate('students/'+editId,data);}
-    else{
-      await dbSet('students/'+authUid,data);
-      await dbSet('grades/'+authUid+'/meta',{name,createdAt:new Date().toISOString()});
-    }
-    SFX.success();
-    toast((editId?'Alumno actualizado':'Alumno agregado')+' ✅','success');
-    closeModal();renderStudents();
-  }catch(err){
-    console.error('saveStudent:',err);
-    toast('Error: '+err.message,'error');
-  }
+async function saveRosterEdit(uid){
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const nivel   = document.getElementById('re-nivel').value;
+  const parcial = document.getElementById('re-parcial').value;
+  const listNum = document.getElementById('re-num').value;
+  await Promise.all([
+    DB.ref('milestone/roster/'+teacherUid+'/'+uid).update({ nivel, parcial, updatedAt: Date.now() }),
+    listNum ? DB.ref('students/'+uid+'/listNum').set(listNum) : Promise.resolve()
+  ]);
+  SFX.success();
+  toast('Datos actualizados ✅','success');
+  closeModal();
+  renderStudents();
+}
+
+// ── saveStudent / editStudent / deleteStudent (operaciones globales via Worker) ──
+function openAddStudent(){
+  // Redirige al gestor de alumnos para crear uno nuevo
+  window.open('https://new-student.pages.dev','_blank');
 }
 
 async function editStudent(id){
-  const s=await dbGet('students/'+id);
-  if(!s)return;
+  const s = await DB.ref('students/'+id).once('value').then(r=>r.val());
+  if(!s) return;
   openModal('✏️ Editar Alumno',`
     <div class="form-group"><label>Nombre *</label><input id="st-name" value="${s.name||''}"></div>
     <div class="form-group"><label>Usuario *</label><input id="st-user" value="${s.username||''}"></div>
@@ -4226,51 +4375,92 @@ async function editStudent(id){
       <div class="form-group"><label>No. Lista</label><input id="st-num" value="${s.listNum||''}"></div>
     </div>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="saveStudent('${id}')">Actualizar ✅</button>`
+     <button class="btn btn-primary" onclick="saveStudentEdit('${id}')">Actualizar ✅</button>`
   );
 }
 
+async function saveStudentEdit(id){
+  const name    = document.getElementById('st-name').value.trim();
+  const username= document.getElementById('st-user').value.trim();
+  const password= document.getElementById('st-pass').value.trim();
+  const email   = document.getElementById('st-email').value.trim();
+  const group   = document.getElementById('st-group').value.trim();
+  const listNum = document.getElementById('st-num').value.trim();
+  if(!name||!username){ toast('Nombre y usuario son requeridos','error'); return; }
+  try{
+    if(password){
+      const resp = await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
+        body:JSON.stringify({action:'updatePassword',uid:id,newPassword:password})
+      });
+      const r = await resp.json();
+      if(!r.ok) throw new Error(r.error);
+    }
+    await DB.ref('students/'+id).update({name,username,email,group,listNum});
+    SFX.success();
+    toast('Alumno actualizado ✅','success');
+    closeModal(); renderStudents();
+  }catch(e){ toast('Error: '+e.message,'error'); }
+}
+
 async function deleteStudent(id,name){
-  if(!confirm(`¿Eliminar a ${name}? Esta acción no se puede deshacer.`))return;
+  if(!confirm(`¿Eliminar a ${name} del sistema completo? Esta acción no se puede deshacer.`)) return;
   SFX.click();
   try{
     await fetch(WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','X-Admin-Secret':ADMIN_SECRET},
-      body:JSON.stringify({action:'delete',uid:id}),
+      body:JSON.stringify({action:'delete',uid:id})
     });
-  }catch(e){console.warn('Auth delete:',e.message);}
-  await dbRemove('students/'+id);
-  await dbRemove('progress/'+id);
-  await dbRemove('grades/'+id);
-  toast('Alumno eliminado','success');
+  }catch(e){ console.warn('Auth delete:',e.message); }
+  await Promise.all([
+    DB.ref('students/'+id).remove(),
+    DB.ref('grades/'+id).remove(),
+    DB.ref('milestone/progress/'+id).remove(),
+    DB.ref('milestone/roster').once('value').then(snap=>{
+      const rosters = snap.val()||{};
+      const del = [];
+      Object.keys(rosters).forEach(tUid=>{
+        if(rosters[tUid][id]) del.push(DB.ref('milestone/roster/'+tUid+'/'+id).remove());
+      });
+      return Promise.all(del);
+    })
+  ]);
+  toast('Alumno eliminado del sistema ✅','success');
   renderStudents();
 }
+
 async function confirmDeleteStudent(id){
-  // Remove ALL student-specific data nodes
-  await Promise.all([
-    dbRemove('students/'+id),
-    dbRemove('grades/'+id),
-    dbRemove('progress/'+id),
-    dbRemove('notifications/'+id),
-    dbRemove('submissions/'+id),
-    dbRemove('attendance_by_student/'+id),
-  ]);
-  toast('Alumno eliminado ✅','success');closeModal();renderStudents();
+  await deleteStudent(id,'este alumno');
 }
+
 
 // ============================================================
 // ADMIN: ATTENDANCE
 // ============================================================
 async function renderAttendance(){
-  const today=new Date().toISOString().split('T')[0];
-  const [students,attData]=await Promise.all([dbGet('students'),dbGet('attendance')]);
-  if(!students){
-    document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">👥</div><p>Agrega alumnos primero</p></div></div>';
+  const today = new Date().toISOString().split('T')[0];
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  const [roster, allStudents, attData] = await Promise.all([
+    DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()),
+    DB.ref('students').once('value').then(s=>s.val()),
+    dbGet('attendance')
+  ]);
+  // Construir lista del maestro
+  const myStudents = [];
+  if (roster && allStudents) {
+    Object.keys(roster).forEach(uid => {
+      if (allStudents[uid]) myStudents.push([uid, allStudents[uid]]);
+    });
+    myStudents.sort((a,b) => (parseInt(a[1].listNum)||99) - (parseInt(b[1].listNum)||99));
+  }
+  if(myStudents.length===0){
+    document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">👥</div><p>Agrega alumnos a tu lista primero</p><button class="btn btn-primary mt-3" onclick="renderStudents()">Ir a Mi Lista</button></div></div>';
     return;
   }
-  const stList=Object.entries(students);
-  const todayAtt=attData&&attData[today]?attData[today]:{};
+  const stList = myStudents;
+  const todayAtt = attData&&attData[today] ? attData[today] : {};
 
   const absenceCounts={};
   if(attData){
@@ -4421,20 +4611,28 @@ async function saveAttendance(date){
 async function renderGrades(){
   document.getElementById('page-title').textContent='📝 Calificaciones';
   setActiveNav('grades');
-  // Leer desde raíz /students y /grades
-  const [students, grades] = await Promise.all([
+  const teacherUid = AUTH.currentUser?.uid || 'admin';
+  // Solo los alumnos del roster del maestro
+  const [roster, allStudents, grades] = await Promise.all([
+    DB.ref('milestone/roster/'+teacherUid).once('value').then(s=>s.val()),
     DB.ref('students').once('value').then(s=>s.val()),
     DB.ref('grades').once('value').then(s=>s.val())
   ]);
-  if(!students){
-    document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">📝</div><p>No hay alumnos registrados</p></div></div>';
+  const myStudents = [];
+  if (roster && allStudents) {
+    Object.keys(roster).forEach(uid => {
+      if (allStudents[uid]) myStudents.push({ uid, ...allStudents[uid], rosterData: roster[uid] });
+    });
+    myStudents.sort((a,b) => (parseInt(a.listNum)||99) - (parseInt(b.listNum)||99));
+  }
+  if(myStudents.length===0){
+    document.getElementById('content-area').innerHTML='<div class="card"><div class="empty-state"><div class="es-icon">📝</div><p>No tienes alumnos en tu lista</p><button class="btn btn-primary mt-3" onclick="renderStudents()">Ir a Mi Lista</button></div></div>';
     return;
   }
   const parcialLabel = activeParcial==='p1'?'1er Parcial':activeParcial==='p2'?'2do Parcial':'Final';
-  const rows = await Promise.all(Object.entries(students).map(async([id,s])=>{
-    const g = (grades&&grades[id]&&grades[id][activeParcial]) || {};
-    // Progreso del alumno en la app
-    const prog = await DB.ref('milestone/progress/'+id).once('value').then(r=>r.val());
+  const rows = await Promise.all(myStudents.map(async s=>{
+    const g = (grades&&grades[s.uid]&&grades[s.uid][activeParcial]) || {};
+    const prog = await DB.ref('milestone/progress/'+s.uid).once('value').then(r=>r.val());
     const totalDone = prog ? Object.values(prog).reduce((a,t)=>a+Object.keys(t).length,0) : 0;
     const totalPossible = TOPICS.length * ACT_TYPES.length;
     const progPct = totalPossible>0 ? Math.round((totalDone/totalPossible)*100) : 0;
@@ -4456,7 +4654,7 @@ async function renderGrades(){
           <span class="text-xs">${progPct}%</span>
         </div>
       </td>
-      <td><button class="btn btn-primary btn-xs" onclick="SFX.click();editGrade('${id}','${s.name.replace(/'/g,"\\'")}')">✏️</button></td>
+      <td><button class="btn btn-primary btn-xs" onclick="SFX.click();editGrade('${s.uid}','${s.name.replace(/'/g,"\\'")}')">✏️</button></td>
     </tr>`;
   }));
   document.getElementById('content-area').innerHTML=`
