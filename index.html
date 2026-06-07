@@ -4700,92 +4700,33 @@ function rsFilter(q){
   });
 }
 
-  // Clasificar alumnos
-  // "Inglés" = tiene materias.ingles=true, o email @student.blackai.com con materia ingles, o campo materia='ingles'
-  const isIngles = (s) =>
-    s.materia === 'ingles' || s.materia === 'inglés' ||
-    (s.materias && (s.materias.ingles || s.materias.inglés)) ||
-    true; // Si no hay campo materia, todos son candidatos — ajusta según tu DB
-
-  const inRoster   = []; // ya en mi curso
-  const inglesAvail = []; // en inglés, disponibles
-  const otrosAvail  = []; // otras materias
-
-  if (allStudents) {
-    Object.entries(allStudents).forEach(([uid, s]) => {
-      const obj = { uid, ...s };
-      if (roster[uid]) { inRoster.push(obj); return; }
-      if (isIngles(s)) inglesAvail.push(obj);
-      else otrosAvail.push(obj);
-    });
+async function addSelectedToRoster(){
+  if(!window._rosterSelected || _rosterSelected.size===0){
+    toast('Selecciona al menos un alumno','error'); return;
   }
-
-  // Ordenar por nombre dentro de cada módulo
-  const sortFn = (a,b) => (a.name||'').localeCompare(b.name||'');
-  inRoster.sort(sortFn); inglesAvail.sort(sortFn); otrosAvail.sort(sortFn);
-
-  // Módulos del libro (el grupo del alumno determina su módulo)
-  // Módulo 1 = grupo contiene '1' (ej: 1A, 1B, grupo1...)
-  // Módulo 2 = grupo contiene '2', etc.
-  const getModulo = (s) => {
-    const g = (s.group||'').trim();
-    if (!g) return '0'; // sin grupo
-    const n = g.match(/\d/);
-    return n ? n[0] : '0';
-  };
-  const MODULO_LABELS = {
-    '1':'Módulo 1 — All about me',
-    '2':'Módulo 2 — My world & Routines',
-    '3':'Módulo 3 — Stories & Past',
-    '4':'Módulo 4 — Achievements',
-    '0':'Sin módulo asignado'
-  };
-
-  // Agrupar por módulo
-  const groupByModulo = (list) => {
-    const map = {};
-    list.forEach(s => {
-      const m = getModulo(s);
-      if (!map[m]) map[m] = [];
-      map[m].push(s);
-    });
-    return map;
-  };
-
-  // Renderizar una tarjeta de alumno
-  const renderCard = (s, disabled=false) => `
-    <div class="rs-card ${disabled?'rs-disabled':''}"
-      data-uid="${s.uid}"
-      data-name="${(s.name||'').toLowerCase()}"
-      data-user="${(s.username||'').toLowerCase()}"
-      data-group="${(s.group||'').toLowerCase()}"
-      data-modulo="${getModulo(s)}"
-      ${disabled ? '' : `onclick="toggleRosterSelect('${s.uid}',this)"`}
-      style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-             border-radius:8px;border:1.5px solid ${disabled?'#bbf7d0':'#e5e7eb'};
-             cursor:${disabled?'default':'pointer'};transition:all .15s;
-             background:${disabled?'#f0fdf4':'#fff'};margin-bottom:6px;">
-      <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
-           background:${disabled?'linear-gradient(135deg,#10b981,#059669)':'linear-gradient(135deg,#3b82f6,#6366f1)'};
-           display:flex;align-items:center;justify-content:center;
-           color:#fff;font-weight:800;font-size:.85rem;">
-        ${(s.name||'?')[0].toUpperCase()}
-      </div>
-      <div style="flex:1;min-width:0;overflow:hidden;">
-        <div style="font-weight:700;font-size:.85rem;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${s.name||'Sin nombre'}
-          ${disabled?'<span style="font-size:.65rem;background:#dcfce7;color:#059669;padding:1px 6px;border-radius:99px;margin-left:4px;font-weight:700;">✓ En curso</span>':''}
-        </div>
-        <div style="font-size:.72rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${s.username||''}  ${s.group?'· Gr. '+s.group:''}
-        </div>
-      </div>
-      ${disabled
-        ? '<span style="font-size:.9rem;color:#10b981;flex-shrink:0;">✓</span>'
-        : `<div id="check-${s.uid}" style="width:20px;height:20px;border-radius:50%;border:2px solid #cbd5e1;flex-shrink:0;transition:all .2s;display:flex;align-items:center;justify-content:center;"></div>`
-      }
-    </div>`;
-
+  const teacherUid  = AUTH.currentUser?.uid || 'admin';
+  const parcial     = document.getElementById('roster-parcial')?.value || activeParcial;
+  const allStudents = await DB.ref('students').once('value').then(s=>s.val()) || {};
+  const updates = {};
+  _rosterSelected.forEach(uid=>{
+    const s  = allStudents[uid] || {};
+    const g  = (s.group||s.grupo||'').trim();
+    const n  = g.match(/(\d)/);
+    const modulo = n ? 'Módulo '+n[1] : 'Sin módulo';
+    updates['milestone/roster/'+teacherUid+'/'+uid] = {
+      addedAt: Date.now(), parcial, modulo, grupo: g||'--', addedBy: currentUser.username
+    };
+    if (!isInglesStudent(s)) {
+      updates['students/'+uid+'/materias/ingles'] = true;
+    }
+  });
+  await DB.ref().update(updates);
+  SFX.success();
+  toast(`${_rosterSelected.size} alumno(s) agregado(s) al curso ✅`, 'success');
+  _rosterSelected = new Set();
+  closeModal();
+  renderStudents();
+}
 
 function isInglesStudent(s){
   if (!s) return false;
@@ -4800,7 +4741,6 @@ function isInglesStudent(s){
   }
   return false;
 }
-
 
 async function removeFromRoster(uid, name){
   if(!confirm(`¿Quitar a ${name} de tu lista? (No se elimina su cuenta)`)) return;
