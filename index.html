@@ -4440,16 +4440,22 @@ async function openRosterSearch(){
   ]);
 
   // ── Filtro real de inglés ──
-  // Un alumno es de inglés si tiene materias.ingles=true en su nodo /students/{uid}/materias/
-  // O si tiene materia='ingles' directamente
+  // En Firebase: students/{uid}/materias/0: "Inglés"  (array con string)
+  // También puede ser: materia: "ingles" o materias: {ingles: true}
   const isIngles = (s) => {
     if (!s) return false;
-    if (s.materia === 'ingles' || s.materia === 'inglés') return true;
+    // Campo directo
+    const m = s.materia || '';
+    if (m.toLowerCase().includes('ingl')) return true;
+    // materias como array: [0: "Inglés", 1: "Otra"]
     if (s.materias) {
-      const m = s.materias;
-      if (m.ingles === true || m.inglés === true) return true;
-      if (typeof m.ingles === 'string') return true;
-      if (typeof m.inglés === 'string') return true;
+      if (Array.isArray(s.materias)) {
+        return s.materias.some(v => typeof v === 'string' && v.toLowerCase().includes('ingl'));
+      }
+      // materias como objeto: {ingles: true} o {0: "Inglés"}
+      return Object.values(s.materias).some(v =>
+        v === true || (typeof v === 'string' && v.toLowerCase().includes('ingl'))
+      );
     }
     return false;
   };
@@ -4783,8 +4789,15 @@ function rsFilter(q){
 
 function isInglesStudent(s){
   if (!s) return false;
-  if (s.materia === 'ingles' || s.materia === 'inglés') return true;
-  if (s.materias && (s.materias.ingles === true || s.materias.inglés === true)) return true;
+  const m = s.materia || '';
+  if (m.toLowerCase().includes('ingl')) return true;
+  if (s.materias) {
+    if (Array.isArray(s.materias))
+      return s.materias.some(v => typeof v === 'string' && v.toLowerCase().includes('ingl'));
+    return Object.values(s.materias).some(v =>
+      v === true || (typeof v === 'string' && v.toLowerCase().includes('ingl'))
+    );
+  }
   return false;
 }
 
